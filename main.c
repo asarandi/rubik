@@ -33,6 +33,8 @@ int initGL(GLvoid) {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1.0f, 1.0f);
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     glViewport(0, 0, (GLsizei) SCREEN_WIDTH, (GLsizei) SCREEN_HEIGHT);
@@ -75,48 +77,119 @@ void rotateZ(float *xyz, float angle)
     xyz[1] = (x * sinf(angle)) + (y * cosf(angle));
 }
 
-void rotate_front()
-{
-    for (int i=0; i<9; i++)
-    {
-        for (int j=0; j<4; j++)
-            rotateZ(&f[0][i][j][0], 0.0174533f);
-    }
+typedef float t_cube[6][4][3];
 
+t_cube cubes[27];
+
+int front[9] = { 6, 15, 24,  3, 12, 21,  0,  9, 18};
+int  back[9] = {26, 17,  8, 23, 14,  5, 20, 19,  2};
+int    up[9] = { 8, 17, 26,  7, 16, 25,  6, 15, 24};
+int  down[9] = { 0,  9, 18,  1, 10, 19,  2, 11, 20};
+int right[9] = {24, 25, 26, 21, 22, 23, 18, 19, 20};
+int  left[9] = { 8,  7,  6,  5,  4,  3,  2,  1,  0};
+
+void rotate_single_cube(int neg)
+{
+    float angle = 0.0174533;
+
+    int i = 18;
+
+    for (int j=0; j<6; j++)
+    {
+        for (int k=0; k<4; k++)
+        {
+            rotateX(&cubes[i][j][k][0], neg ? -angle : angle);
+            rotateY(&cubes[i][j][k][0], neg ? -angle : angle);
+            rotateZ(&cubes[i][j][k][0], neg ? -angle : angle);
+        }
+    }
+}
+
+t_cube *make_cube(float x, float y, float z)
+{
+    static t_cube  t;
+    static float u = 2.0f;
+
+    t[0][0][0] = x;    t[0][0][1] = y;    t[0][0][2] = z;   //A
+    t[0][1][0] = x;    t[0][1][1] = y+u;  t[0][1][2] = z;   //B    
+    t[0][2][0] = x+u;  t[0][2][1] = y+u;  t[0][2][2] = z;   //C
+    t[0][3][0] = x+u;  t[0][3][1] = y;    t[0][3][2] = z;   //D
+
+    t[1][0][0] = x;    t[1][0][1] = y;    t[1][0][2] = z-u; //E
+    t[1][1][0] = x;    t[1][1][1] = y+u;  t[1][1][2] = z-u; //F
+    t[1][2][0] = x+u;  t[1][2][1] = y+u;  t[1][2][2] = z-u; //G
+    t[1][3][0] = x+u;  t[1][3][1] = y;    t[1][3][2] = z-u; //H
+
+    t[2][0][0] = x;    t[2][0][1] = y+u;  t[2][0][2] = z;   //B    
+    t[2][1][0] = x;    t[2][1][1] = y+u;  t[2][1][2] = z-u; //F
+    t[2][2][0] = x+u;  t[2][2][1] = y+u;  t[2][2][2] = z-u; //G
+    t[2][3][0] = x+u;  t[2][3][1] = y+u;  t[2][3][2] = z;   //C
+
+    t[3][0][0] = x;    t[3][0][1] = y;    t[3][0][2] = z;   //A
+    t[3][1][0] = x;    t[3][1][1] = y;    t[3][1][2] = z-u; //E
+    t[3][2][0] = x+u;  t[3][2][1] = y;    t[3][2][2] = z-u; //H
+    t[3][3][0] = x+u;  t[3][3][1] = y;    t[3][3][2] = z;   //D
+
+    t[4][0][0] = x+u;  t[4][0][1] = y;    t[4][0][2] = z;   //D
+    t[4][1][0] = x+u;  t[4][1][1] = y+u;  t[4][1][2] = z;   //C
+    t[4][2][0] = x+u;  t[4][2][1] = y+u;  t[4][2][2] = z-u; //G
+    t[4][3][0] = x+u;  t[4][3][1] = y;    t[4][3][2] = z-u; //H
+
+    t[5][0][0] = x;    t[5][0][1] = y;    t[5][0][2] = z;   //A
+    t[5][1][0] = x;    t[5][1][1] = y+u;  t[5][1][2] = z;   //B    
+    t[5][2][0] = x;    t[5][2][1] = y+u;  t[5][2][2] = z-u; //F
+    t[5][3][0] = x;    t[5][3][1] = y;    t[5][3][2] = z-u; //E
+    return &t;
+}
+
+float angle = 0.0174533f * 5;
+
+void rotate_down(int neg)
+{
     for (int i=0; i<3; i++)
     {
-        for (int j=0; j<4; j++)
+        for (int j=0; j<6; j++)
         {
-            rotateZ(&f[2][i][j][0], 0.0174533f);
-            rotateZ(&f[3][i][j][0], 0.0174533f);
-            rotateZ(&f[4][i][j][0], 0.0174533f);
-            rotateZ(&f[5][i][j][0], 0.0174533f);
+            for (int k=0; k<4; k++)
+            {
+                rotateY(&cubes[0*9+i][j][k][0], neg ? -angle : angle);
+                rotateY(&cubes[1*9+i][j][k][0], neg ? -angle : angle);
+                rotateY(&cubes[2*9+i][j][k][0], neg ? -angle : angle);
+            }
+        }
+    }
+}
+
+void rotate_front(int neg)
+{
+    for (int idx=0; idx<9; idx++)
+    {
+        int i=front[idx];
+        for (int j=0; j<6; j++)
+        {
+            for (int k=0; k<4; k++)
+                rotateZ(cubes[i][j][k], neg ? -angle : angle);
         }
     }
 }
 
 
-void rotate_up()
+void init_cubes()
 {
-    for (int i=0; i<9; i++)
+    int idx = 0;
+    t_cube *t;
+    for (int i=-3; i<3; i+=2)
     {
-        for (int j=0; j<4; j++)
-            rotateY(&f[2][i][j][0], 0.0174533f);
-    }
-
-    for (int i=0; i<3; i++)
-    {
-        for (int j=0; j<4; j++)
+        for (int j=-3; j<3; j+=2)
         {
-            rotateY(&f[0][i][j][0], 0.0174533f);
-            rotateY(&f[1][i][j][0], 0.0174533f);
-            rotateY(&f[4][i*3+2][j][0], 0.0174533f);
-            rotateY(&f[5][i*3+2][j][0], 0.0174533f);
+            for (int k=3; k>-3; k-=2)
+            {
+                t = make_cube((float)i, (float)j, (float)k);
+                memcpy(cubes[idx++], t, sizeof(*t));
+            }
         }
     }
 }
-
-
 
 int drawGLScene(GLvoid) {
     //static GLfloat rquad;
@@ -124,16 +197,17 @@ int drawGLScene(GLvoid) {
     glLoadIdentity();
     glTranslatef(0.0f, 0.0f, -18.0f);
     glRotatef(35.264f, 1.0f, 0.0f, 0.0f);
-    glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(-45.0f, 0.0f, 1.0f, 0.0f);
     glBegin(GL_QUADS);
-    for (int i=0; i<6; i++)
+
+    for (int i=0; i<27; i++)
     {
-        glColor3f(c[i][0], c[i][1], c[i][2]);
-        for (int j=0; j<9; j++)
+        for (int j=0; j<6; j++)
         {
+            glColor3f(c[j][0], c[j][1], c[j][2]);
             for (int k=0; k<4; k++)
             {
-                glVertex3f(f[i][j][k][0], f[i][j][k][1] , f[i][j][k][2]);
+                glVertex3f(cubes[i][j][k][0], cubes[i][j][k][1], cubes[i][j][k][2]);
             }
         }
     }
@@ -146,11 +220,26 @@ void handleKeyPress(SDL_Keysym *keysym) {
         case SDLK_ESCAPE:
             Quit(0);
             break;
-        case SDLK_u:
-            rotate_up();
+//        case SDLK_u:
+//            rotate_up();
+//            break;
+        case SDLK_a:
+            rotate_single_cube(0);
+            break;
+        case SDLK_z:
+            rotate_single_cube(1);
             break;
         case SDLK_f:
-            rotate_front();
+            rotate_front(0);
+            break;
+        case SDLK_v:
+            rotate_front(1);
+            break;
+        case SDLK_d:
+            rotate_down(0);
+            break;
+        case SDLK_c:
+            rotate_down(1);
             break;
         default:
             break;
@@ -161,6 +250,7 @@ void handleKeyPress(SDL_Keysym *keysym) {
 int main(int argc, char **argv) {
     int done = FALSE;
     SDL_Event event;
+    init_cubes();
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {

@@ -1,4 +1,4 @@
-CC = gcc -Wall
+CC = gcc -g -Wall
 
 all:
 	$(CC) main.c cube.c -o lesson05 -lGL -lGLU `sdl2-config --cflags --libs` -lm
