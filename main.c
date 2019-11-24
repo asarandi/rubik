@@ -11,6 +11,9 @@
 #define TRUE  1
 #define FALSE 0
 
+extern float f[6][9][4][3];
+extern float c[6][3];
+
 SDL_GLContext   *context;
 SDL_Window      *window;
 
@@ -21,17 +24,6 @@ void Quit(int returnCode) {
         SDL_DestroyWindow(window);
     SDL_Quit();
     exit(returnCode);
-}
-
-void handleKeyPress(SDL_Keysym *keysym) {
-    switch (keysym->sym) {
-        case SDLK_ESCAPE:
-            Quit(0);
-            break;
-        default:
-            break;
-    }
-    return;
 }
 
 int initGL(GLvoid) {
@@ -53,97 +45,117 @@ int initGL(GLvoid) {
     return (TRUE);
 }
 
-float f [9][4][3] = {
-    {   {-3.0f,  3.0f, 3.0f},     //A-TL
-        {-1.0f,  3.0f, 3.0f},     //A-TR
-        {-1.0f,  1.0f, 3.0f},     //A-BR
-        {-3.0f,  1.0f, 3.0f} },   //A-BL
-    {   {-1.0f,  3.0f, 3.0f},     //B-TL
-        { 1.0f,  3.0f, 3.0f},     //B-TR
-        { 1.0f,  1.0f, 3.0f},     //B-BR
-        {-1.0f,  1.0f, 3.0f} },   //B-BL
-    {   { 1.0f,  3.0f, 3.0f},     //C-TL
-        { 3.0f,  3.0f, 3.0f},     //C-TR
-        { 3.0f,  1.0f, 3.0f},     //C-BR
-        { 1.0f,  1.0f, 3.0f} },   //C-BL
-    {   {-3.0f,  1.0f, 3.0f},     //D-TL
-        {-1.0f,  1.0f, 3.0f},     //D-TR
-        {-1.0f, -1.0f, 3.0f},     //D-BR
-        {-3.0f, -1.0f, 3.0f} },   //D-BL
-    {   {-1.0f,  1.0f, 3.0f},     //E-TL
-        { 1.0f,  1.0f, 3.0f},     //E-TR
-        { 1.0f, -1.0f, 3.0f},     //E-BR
-        {-1.0f, -1.0f, 3.0f} },   //E-BL
-    {   { 1.0f,  1.0f, 3.0f},     //F-TL
-        { 3.0f,  1.0f, 3.0f},     //F-TR
-        { 3.0f, -1.0f, 3.0f},     //F-BR
-        { 1.0f, -1.0f, 3.0f} },   //F-BL
-    {   {-3.0f, -1.0f, 3.0f},     //G-TL
-        {-1.0f, -1.0f, 3.0f},     //G-TR
-        {-1.0f, -3.0f, 3.0f},     //G-BR
-        {-3.0f, -3.0f, 3.0f} },   //G-BL
-    {   {-1.0f, -1.0f, 3.0f},     //H-TL
-        { 1.0f, -1.0f, 3.0f},     //H-TR
-        { 1.0f, -3.0f, 3.0f},     //H-BR
-        {-1.0f, -3.0f, 3.0f} },   //H-BL
-    {   { 1.0f, -1.0f, 3.0f},     //I-TL
-        { 3.0f, -1.0f, 3.0f},     //I-TR
-        { 3.0f, -3.0f, 3.0f},     //I-BR
-        { 1.0f, -3.0f, 3.0f} }    //I-BL
-};
+void rotateX(float *xyz, float angle)
+{
+    float y, z;
+    
+    y = xyz[1];
+    z = xyz[2];
+    xyz[1] = (y * cosf(angle)) + (z * -sinf(angle));
+    xyz[2] = (y * sinf(angle)) + (z * cosf(angle));
+}
 
-float c[9][3] = {
-    {1.0f, 0.0f, 0.0f},
-    {0.0f, 1.0f, 0.0f},
-    {0.0f, 0.0f, 1.0f},
-    {1.0f, 1.0f, 0.0f},
-    {1.0f, 0.0f, 1.0f},
-    {0.0f, 1.0f, 1.0f},
-    {1.0f, 1.0f, 1.0f},
-    {0.5f, 1.0f, 0.0f},
-    {0.0f, 1.0f, 0.5f}
-};
+void rotateY(float *xyz, float angle)
+{
+    float x, z;
+    
+    x = xyz[0];
+    z = xyz[2];
+    xyz[0] = (x * cosf(angle)) + (z * sinf(angle));
+    xyz[2] = (x * -sinf(angle)) + (z * cosf(angle));
+}
 
-//  1.00f, 0.65f, 0.00f     //orange    // FRONT
-//  1.00f, 0.00f, 0.00f     //red       // BACK
+void rotateZ(float *xyz, float angle)
+{
+    float x, y;
+    
+    x = xyz[0];
+    y = xyz[1];
+    xyz[0] = (x * cosf(angle)) + (y * -sinf(angle));
+    xyz[1] = (x * sinf(angle)) + (y * cosf(angle));
+}
 
-//  1.00f, 1.00f, 1.00f     //white     // UP
-//  1.00f, 1.00f, 0.00f     //yellow    // DOWN
+void rotate_front()
+{
+    for (int i=0; i<9; i++)
+    {
+        for (int j=0; j<4; j++)
+            rotateZ(&f[0][i][j][0], 0.0174533f);
+    }
 
-//  0.00f, 0.00f, 1.00f     //blue      // LEFT
-//  0.00f, 1.00f, 0.00f     //green     // RIGHT
+    for (int i=0; i<3; i++)
+    {
+        for (int j=0; j<4; j++)
+        {
+            rotateZ(&f[2][i][j][0], 0.0174533f);
+            rotateZ(&f[3][i][j][0], 0.0174533f);
+            rotateZ(&f[4][i][j][0], 0.0174533f);
+            rotateZ(&f[5][i][j][0], 0.0174533f);
+        }
+    }
+}
+
+
+void rotate_up()
+{
+    for (int i=0; i<9; i++)
+    {
+        for (int j=0; j<4; j++)
+            rotateY(&f[2][i][j][0], 0.0174533f);
+    }
+
+    for (int i=0; i<3; i++)
+    {
+        for (int j=0; j<4; j++)
+        {
+            rotateY(&f[0][i][j][0], 0.0174533f);
+            rotateY(&f[1][i][j][0], 0.0174533f);
+            rotateY(&f[4][i*3+2][j][0], 0.0174533f);
+            rotateY(&f[5][i*3+2][j][0], 0.0174533f);
+        }
+    }
+}
+
+
 
 int drawGLScene(GLvoid) {
-    static GLfloat rquad;
+    //static GLfloat rquad;
 
-    glLoadIdentity(); glTranslatef(0.0f, 0.0f, -18.0f);
-    glRotatef(rquad, 1.0f, 0.5f, 0.0f);    rquad -= 0.5f;
+    glLoadIdentity();
+    glTranslatef(0.0f, 0.0f, -18.0f);
+    glRotatef(35.264f, 1.0f, 0.0f, 0.0f);
+    glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
     glBegin(GL_QUADS);
-    for (int i=0; i<9; i++) {
-        glColor3f(1.00f, 0.65f, 0.00f);             for (int j=0; j<4; j++) glVertex3f(f[i][j][0], f[i][j][1],  3.0f); }
-    for (int i=0; i<9; i++) {
-        glColor3f(1.00f, 0.00f, 0.00f);             for (int j=0; j<4; j++) glVertex3f(f[i][j][0], f[i][j][1], -3.0f); }
-    glEnd();        
-
-//    glLoadIdentity();
-//    glTranslatef(0.0f, 0.0f, -18.0f);
-    glBegin(GL_QUADS);
-    for (int i=0; i<9; i++) {
-        glColor3f(1.00f, 1.00f, 1.00f);             for (int j=0; j<4; j++) glVertex3f(f[i][j][0], 3.0f, f[i][j][1]); }
-    for (int i=0; i<9; i++) {
-        glColor3f(1.00f, 1.00f, 0.00f);             for (int j=0; j<4; j++) glVertex3f(f[i][j][0], -3.0f, f[i][j][1]); }
-    glEnd();        
-
-//    glLoadIdentity();
-//    glTranslatef(0.0f, 0.0f, -18.0f);
-    glBegin(GL_QUADS);
-    for (int i=0; i<9; i++) {
-        glColor3f(0.00f, 1.00f, 0.00f);             for (int j=0; j<4; j++) glVertex3f(3.0, f[i][j][0], f[i][j][1]); }
-    for (int i=0; i<9; i++) {
-        glColor3f(0.00f, 0.00f, 1.00f);             for (int j=0; j<4; j++) glVertex3f(-3.0, f[i][j][0], f[i][j][1]); }
+    for (int i=0; i<6; i++)
+    {
+        glColor3f(c[i][0], c[i][1], c[i][2]);
+        for (int j=0; j<9; j++)
+        {
+            for (int k=0; k<4; k++)
+            {
+                glVertex3f(f[i][j][k][0], f[i][j][k][1] , f[i][j][k][2]);
+            }
+        }
+    }
     glEnd();
-
     return (TRUE);
+}
+
+void handleKeyPress(SDL_Keysym *keysym) {
+    switch (keysym->sym) {
+        case SDLK_ESCAPE:
+            Quit(0);
+            break;
+        case SDLK_u:
+            rotate_up();
+            break;
+        case SDLK_f:
+            rotate_front();
+            break;
+        default:
+            break;
+    }
+    return;
 }
 
 int main(int argc, char **argv) {
