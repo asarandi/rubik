@@ -11,6 +11,15 @@
 #define TRUE  1
 #define FALSE 0
 
+extern int faces[6][9];
+
+void update_front();
+void update_back();
+void update_up();
+void update_down();
+void update_right();
+void update_left();
+
 extern float f[6][9][4][3];
 extern float c[6][3];
 
@@ -81,30 +90,6 @@ typedef float t_cube[6][4][3];
 
 t_cube cubes[27];
 
-int front[9] = { 6, 15, 24,  3, 12, 21,  0,  9, 18};
-int  back[9] = {26, 17,  8, 23, 14,  5, 20, 19,  2};
-int    up[9] = { 8, 17, 26,  7, 16, 25,  6, 15, 24};
-int  down[9] = { 0,  9, 18,  1, 10, 19,  2, 11, 20};
-int right[9] = {24, 25, 26, 21, 22, 23, 18, 19, 20};
-int  left[9] = { 8,  7,  6,  5,  4,  3,  2,  1,  0};
-
-void rotate_single_cube(int neg)
-{
-    float angle = 0.0174533;
-
-    int i = 18;
-
-    for (int j=0; j<6; j++)
-    {
-        for (int k=0; k<4; k++)
-        {
-            rotateX(&cubes[i][j][k][0], neg ? -angle : angle);
-            rotateY(&cubes[i][j][k][0], neg ? -angle : angle);
-            rotateZ(&cubes[i][j][k][0], neg ? -angle : angle);
-        }
-    }
-}
-
 t_cube *make_cube(float x, float y, float z)
 {
     static t_cube  t;
@@ -142,37 +127,75 @@ t_cube *make_cube(float x, float y, float z)
     return &t;
 }
 
-float angle = 0.0174533f * 5;
+float angle = -1.5708f;
 
-void rotate_down(int neg)
+/*
+
+clockwise
+0 1 2      6 3 0
+3 4 5  =>  7 4 1
+6 7 8      8 5 2
+
+anti-clockwise
+0 1 2      2 5 8
+3 4 5  =>  1 4 7
+6 7 8      0 3 6
+
+*/
+
+void rotate_ints(int *face, int rev)
 {
-    for (int i=0; i<3; i++)
-    {
-        for (int j=0; j<6; j++)
-        {
-            for (int k=0; k<4; k++)
-            {
-                rotateY(&cubes[0*9+i][j][k][0], neg ? -angle : angle);
-                rotateY(&cubes[1*9+i][j][k][0], neg ? -angle : angle);
-                rotateY(&cubes[2*9+i][j][k][0], neg ? -angle : angle);
-            }
-        }
-    }
+    int clockwise[] = {6, 3, 0, 7, 4, 1, 8, 5, 2};
+    int anticlock[] = {2, 5, 8, 1, 4, 7, 0, 3, 6};
+    int *src, copy[9], i;
+
+    for (i=0; i<9; i++)
+        copy[i] = face[i];
+    src = rev ? anticlock : clockwise;
+    for (i=0; i<9; i++)
+        face[i] = copy[src[i]];
 }
 
-void rotate_front(int neg)
+
+void rotate_Z(int *face, int rev)   //F, B
 {
     for (int idx=0; idx<9; idx++)
     {
-        int i=front[idx];
+        int i=face[idx];
         for (int j=0; j<6; j++)
         {
             for (int k=0; k<4; k++)
-                rotateZ(cubes[i][j][k], neg ? -angle : angle);
+                rotateZ(cubes[i][j][k], rev ? -angle : angle);
         }
     }
 }
 
+void rotate_Y(int *face, int rev)   //U, D
+{
+    for (int idx=0; idx<9; idx++)
+    {
+        int i=face[idx];
+        for (int j=0; j<6; j++)
+        {
+            for (int k=0; k<4; k++)
+                rotateY(cubes[i][j][k], rev ? -angle : angle);
+        }
+    }
+}
+
+
+void rotate_X(int *face, int rev)   //R, L
+{
+    for (int idx=0; idx<9; idx++)
+    {
+        int i=face[idx];
+        for (int j=0; j<6; j++)
+        {
+            for (int k=0; k<4; k++)
+                rotateX(cubes[i][j][k], rev ? -angle : angle);
+        }
+    }
+}
 
 void init_cubes()
 {
@@ -191,13 +214,16 @@ void init_cubes()
     }
 }
 
+float perspective_x = 35.264f;
+float perspective_y = -45.0f;
+
 int drawGLScene(GLvoid) {
     //static GLfloat rquad;
 
     glLoadIdentity();
     glTranslatef(0.0f, 0.0f, -18.0f);
-    glRotatef(35.264f, 1.0f, 0.0f, 0.0f);
-    glRotatef(-45.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(perspective_x, 1.0f, 0.0f, 0.0f);
+    glRotatef(perspective_y, 0.0f, 1.0f, 0.0f);
     glBegin(GL_QUADS);
 
     for (int i=0; i<27; i++)
@@ -206,9 +232,7 @@ int drawGLScene(GLvoid) {
         {
             glColor3f(c[j][0], c[j][1], c[j][2]);
             for (int k=0; k<4; k++)
-            {
                 glVertex3f(cubes[i][j][k][0], cubes[i][j][k][1], cubes[i][j][k][2]);
-            }
         }
     }
     glEnd();
@@ -220,27 +244,28 @@ void handleKeyPress(SDL_Keysym *keysym) {
         case SDLK_ESCAPE:
             Quit(0);
             break;
-//        case SDLK_u:
-//            rotate_up();
-//            break;
-        case SDLK_a:
-            rotate_single_cube(0);
-            break;
-        case SDLK_z:
-            rotate_single_cube(1);
-            break;
-        case SDLK_f:
-            rotate_front(0);
-            break;
-        case SDLK_v:
-            rotate_front(1);
-            break;
-        case SDLK_d:
-            rotate_down(0);
-            break;
-        case SDLK_c:
-            rotate_down(1);
-            break;
+        case SDLK_a: {rotate_Z(faces[0], 0); rotate_ints(faces[0], 0); update_front(); printf("F \n"); break ;} //F
+        case SDLK_z: {rotate_Z(faces[0], 1); rotate_ints(faces[0], 1); update_front(); printf("F'\n"); break ;} //F'
+
+        case SDLK_s: {rotate_Z(faces[1], 1); rotate_ints(faces[1], 0); update_back (); printf("B \n"); break ;} //B
+        case SDLK_x: {rotate_Z(faces[1], 0); rotate_ints(faces[1], 1); update_back (); printf("B'\n"); break ;} //B'
+
+        case SDLK_d: {rotate_Y(faces[2], 0); rotate_ints(faces[2], 0); update_up   (); printf("U \n"); break ;} //U
+        case SDLK_c: {rotate_Y(faces[2], 1); rotate_ints(faces[2], 1); update_up   (); printf("U'\n"); break ;} //U'
+
+        case SDLK_f: {rotate_Y(faces[3], 1); rotate_ints(faces[3], 0); update_down (); printf("D \n"); break ;} //D
+        case SDLK_v: {rotate_Y(faces[3], 0); rotate_ints(faces[3], 1); update_down (); printf("D'\n"); break ;} //D'
+
+        case SDLK_g: {rotate_X(faces[4], 0); rotate_ints(faces[4], 0); update_right(); printf("R \n"); break ;} //R
+        case SDLK_b: {rotate_X(faces[4], 1); rotate_ints(faces[4], 1); update_right(); printf("R'\n"); break ;} //R'
+
+        case SDLK_h: {rotate_X(faces[5], 1); rotate_ints(faces[5], 0); update_left (); printf("L \n"); break ;} //L
+        case SDLK_n: {rotate_X(faces[5], 0); rotate_ints(faces[5], 1); update_left (); printf("L'\n"); break ;} //L'
+
+        case SDLK_RIGHT: perspective_y += 11.25f; break ;
+        case SDLK_LEFT:  perspective_y -= 11.25f; break ;
+        case SDLK_UP:    perspective_x += 11.25f; break ;
+        case SDLK_DOWN:  perspective_x -= 11.25f; break ;
         default:
             break;
     }

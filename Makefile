@@ -1,7 +1,7 @@
 CC = gcc -g -Wall
 
 all:
-	$(CC) main.c cube.c -o lesson05 -lGL -lGLU `sdl2-config --cflags --libs` -lm
+	$(CC) cube.c faces.c main.c -o lesson05 -lGL -lGLU `sdl2-config --cflags --libs` -lm
 
 clean:
 	@echo Cleaning up...
