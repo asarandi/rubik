@@ -42,8 +42,8 @@ int initGL(GLvoid) {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(1.0f, 1.0f);
+//    glEnable(GL_POLYGON_OFFSET_FILL);
+//    glPolygonOffset(1.0f, 1.0f);
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     glViewport(0, 0, (GLsizei) SCREEN_WIDTH, (GLsizei) SCREEN_HEIGHT);
@@ -224,8 +224,8 @@ int drawGLScene(GLvoid) {
     glTranslatef(0.0f, 0.0f, -18.0f);
     glRotatef(perspective_x, 1.0f, 0.0f, 0.0f);
     glRotatef(perspective_y, 0.0f, 1.0f, 0.0f);
-    glBegin(GL_QUADS);
 
+    glBegin(GL_QUADS);
     for (int i=0; i<27; i++)
     {
         for (int j=0; j<6; j++)
@@ -236,6 +236,25 @@ int drawGLScene(GLvoid) {
         }
     }
     glEnd();
+
+    glLineWidth(10.0f);
+    glBegin(GL_LINES);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    int t[8] = {0,1,2,3,0,3,1,2};
+    for (int i=0; i<27; i++)
+    {
+        for (int j=0; j<8; j++)
+            glVertex3f(cubes[i][0][t[j]][0], cubes[i][0][t[j]][1], cubes[i][0][t[j]][2]);
+        for (int j=0; j<8; j++)
+            glVertex3f(cubes[i][1][t[j]][0], cubes[i][1][t[j]][1], cubes[i][1][t[j]][2]);
+        for (int j=0; j<4; j++)
+        {
+            glVertex3f(cubes[i][0][j][0], cubes[i][0][j][1], cubes[i][0][j][2]);
+            glVertex3f(cubes[i][1][j][0], cubes[i][1][j][1], cubes[i][1][j][2]);
+        }
+    }
+    glEnd();
+
     return (TRUE);
 }
 
@@ -312,7 +331,7 @@ int main(int argc, char **argv) {
                     break;
             }
         }
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         drawGLScene();
         SDL_GL_SwapWindow(window);
