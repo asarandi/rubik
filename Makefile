@@ -1,5 +1,5 @@
 NAME    = visualizer
-CFLAGS  += -g -Wall -Werror
+CFLAGS  += -g -Wall #-Werror
 CFLAGS  += $(shell sdl2-config --cflags)
 LDFLAGS += $(shell sdl2-config --libs) -lGL -lGLU -lm
 

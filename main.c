@@ -1,15 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "visualizer.h"
+
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "SDL.h"
-
-#define SCREEN_WIDTH  640
-#define SCREEN_HEIGHT 480
-#define SCREEN_BPP     16
-
-#define TRUE  1
-#define FALSE 0
 
 extern int faces[6][9];
 
@@ -20,7 +13,6 @@ void update_down();
 void update_right();
 void update_left();
 
-extern float f[6][9][4][3];
 extern float c[6][3];
 
 SDL_GLContext   *context;
@@ -53,7 +45,7 @@ int initGL(GLvoid) {
     gluPerspective(45.0f, ratio, 0.1f, 100.0f);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    return (TRUE);
+    return (1);
 }
 
 void rotateX(float *xyz, float angle)
@@ -127,7 +119,7 @@ t_cube *make_cube(float x, float y, float z)
     return &t;
 }
 
-float angle = -1.5708f;
+float angle = -0.0174533; //-1.5708f;
 
 /*
 
@@ -255,8 +247,21 @@ int drawGLScene(GLvoid) {
     }
     glEnd();
 
-    return (TRUE);
+    return (1);
 }
+
+
+uint64_t get_time_stamp()
+{
+    struct timeval  tv;
+
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000ull + tv.tv_usec;
+}
+
+#define MOVE_DURATION 500000    /* half second */
+static uint64_t move_started_time;
+
 
 void handleKeyPress(SDL_Keysym *keysym) {
     switch (keysym->sym) {
@@ -292,7 +297,7 @@ void handleKeyPress(SDL_Keysym *keysym) {
 }
 
 int main(int argc, char **argv) {
-    int done = FALSE;
+    int done = 0;
     SDL_Event event;
     init_cubes();
 
@@ -325,7 +330,7 @@ int main(int argc, char **argv) {
                     handleKeyPress(&event.key.keysym);
                     break;
                 case SDL_QUIT:
-                    done = TRUE;
+                    done = 1;
                     break;
                 default:
                     break;

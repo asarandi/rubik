@@ -22,12 +22,12 @@
 
 
 /*
-    6 cube faces,   F = orange
-                    B = red
+    6 cube faces,   F = green
+                    B = blue
                     U = white
                     D = yellow
-                    R = green
-                    L = blue
+                    R = red
+                    L = orange
 
 
     9 squares per face: ABC
