@@ -1,9 +1,18 @@
-CC = gcc -g -Wall
+NAME    = visualizer
+CFLAGS  += -g -Wall -Werror
+CFLAGS  += $(shell sdl2-config --cflags)
+LDFLAGS += $(shell sdl2-config --libs) -lGL -lGLU -lm
 
-all:
-	$(CC) cube.c faces.c main.c -o lesson05 -lGL -lGLU `sdl2-config --cflags --libs` -lm
+SRC = cube.c faces.c main.c
+OBJ = $(SRC:.c=.o)
+
+$(NAME): $(OBJ)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 clean:
-	@echo Cleaning up...
-	@rm lesson05
-	@echo Done.
+	rm -f $(OBJ)
+
+fclean: clean
+	rm -f $(NAME)
+
+re: fclean $(NAME)

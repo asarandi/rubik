@@ -29,7 +29,7 @@ SDL_Window      *window;
 void Quit(int returnCode) {
     if (context)
         SDL_GL_DeleteContext(context);
-    if (window)        
+    if (window)
         SDL_DestroyWindow(window);
     SDL_Quit();
     exit(returnCode);
@@ -59,7 +59,7 @@ int initGL(GLvoid) {
 void rotateX(float *xyz, float angle)
 {
     float y, z;
-    
+
     y = xyz[1];
     z = xyz[2];
     xyz[1] = (y * cosf(angle)) + (z * -sinf(angle));
@@ -69,7 +69,7 @@ void rotateX(float *xyz, float angle)
 void rotateY(float *xyz, float angle)
 {
     float x, z;
-    
+
     x = xyz[0];
     z = xyz[2];
     xyz[0] = (x * cosf(angle)) + (z * sinf(angle));
@@ -79,7 +79,7 @@ void rotateY(float *xyz, float angle)
 void rotateZ(float *xyz, float angle)
 {
     float x, y;
-    
+
     x = xyz[0];
     y = xyz[1];
     xyz[0] = (x * cosf(angle)) + (y * -sinf(angle));
@@ -96,7 +96,7 @@ t_cube *make_cube(float x, float y, float z)
     static float u = 2.0f;
 
     t[0][0][0] = x;    t[0][0][1] = y;    t[0][0][2] = z;   //A
-    t[0][1][0] = x;    t[0][1][1] = y+u;  t[0][1][2] = z;   //B    
+    t[0][1][0] = x;    t[0][1][1] = y+u;  t[0][1][2] = z;   //B
     t[0][2][0] = x+u;  t[0][2][1] = y+u;  t[0][2][2] = z;   //C
     t[0][3][0] = x+u;  t[0][3][1] = y;    t[0][3][2] = z;   //D
 
@@ -105,7 +105,7 @@ t_cube *make_cube(float x, float y, float z)
     t[1][2][0] = x+u;  t[1][2][1] = y+u;  t[1][2][2] = z-u; //G
     t[1][3][0] = x+u;  t[1][3][1] = y;    t[1][3][2] = z-u; //H
 
-    t[2][0][0] = x;    t[2][0][1] = y+u;  t[2][0][2] = z;   //B    
+    t[2][0][0] = x;    t[2][0][1] = y+u;  t[2][0][2] = z;   //B
     t[2][1][0] = x;    t[2][1][1] = y+u;  t[2][1][2] = z-u; //F
     t[2][2][0] = x+u;  t[2][2][1] = y+u;  t[2][2][2] = z-u; //G
     t[2][3][0] = x+u;  t[2][3][1] = y+u;  t[2][3][2] = z;   //C
@@ -121,7 +121,7 @@ t_cube *make_cube(float x, float y, float z)
     t[4][3][0] = x+u;  t[4][3][1] = y;    t[4][3][2] = z-u; //H
 
     t[5][0][0] = x;    t[5][0][1] = y;    t[5][0][2] = z;   //A
-    t[5][1][0] = x;    t[5][1][1] = y+u;  t[5][1][2] = z;   //B    
+    t[5][1][0] = x;    t[5][1][1] = y+u;  t[5][1][2] = z;   //B
     t[5][2][0] = x;    t[5][2][1] = y+u;  t[5][2][2] = z-u; //F
     t[5][3][0] = x;    t[5][3][1] = y;    t[5][3][2] = z-u; //E
     return &t;
