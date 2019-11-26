@@ -60,8 +60,6 @@ int initGL(GLvoid) {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
     glEnable(GL_DEPTH_TEST);
-//    glEnable(GL_POLYGON_OFFSET_FILL);
-//    glPolygonOffset(1.0f, 1.0f);
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     glViewport(0, 0, (GLsizei) SCREEN_WIDTH, (GLsizei) SCREEN_HEIGHT);
@@ -224,9 +222,24 @@ void rotate_X(int f, float angle)   //R, L
     }
 }
 
+int *colors(int i, int j, int k)
+{
+    static int  res[6];
+
+    res[0] = k == 3;
+    res[1] = k == -1;
+    res[2] = j == 1;
+    res[3] = j == -3;
+    res[4] = i == 1;
+    res[5] = i == -3;
+    return res;
+}
+
+int ctable [27][6];
+
 void init_cubes()
 {
-    int idx = 0;
+    int *c, idx = 0;
     t_cube *t;
     for (int i=-3; i<3; i+=2)
     {
@@ -235,7 +248,9 @@ void init_cubes()
             for (int k=3; k>-3; k-=2)
             {
                 t = make_cube((float)i, (float)j, (float)k);
-                memcpy(cubes[idx++], t, sizeof(*t));
+                memcpy(cubes[idx], t, sizeof(*t));
+                c = colors(i, j, k);
+                memcpy(ctable[idx++], c, sizeof(int) * 6);
             }
         }
     }
@@ -244,8 +259,9 @@ void init_cubes()
 float perspective_x = 35.264f;
 float perspective_y = -45.0f;
 
+#define CUBE_INNER_COLOR 0.08f, 0.08f, 0.08f
+
 int drawGLScene(GLvoid) {
-    //static GLfloat rquad;
 
     glLoadIdentity();
     glTranslatef(0.0f, 0.0f, -18.0f);
@@ -257,7 +273,11 @@ int drawGLScene(GLvoid) {
     {
         for (int j=0; j<6; j++)
         {
-            glColor3f(c[j][0], c[j][1], c[j][2]);
+            if (ctable[i][j])
+                glColor3f(c[j][0], c[j][1], c[j][2]);
+            else
+                glColor3f(CUBE_INNER_COLOR);
+
             for (int k=0; k<4; k++)
                 glVertex3f(cubes[i][j][k][0], cubes[i][j][k][1], cubes[i][j][k][2]);
         }
@@ -266,7 +286,7 @@ int drawGLScene(GLvoid) {
 
     glLineWidth(10.0f);
     glBegin(GL_LINES);
-    glColor3f(0.0f, 0.0f, 0.0f);
+    glColor3f(CUBE_INNER_COLOR);
     int t[8] = {0,1,2,3,0,3,1,2};
     for (int i=0; i<27; i++)
     {
@@ -331,7 +351,7 @@ uint64_t get_time_stamp()
     return tv.tv_sec * 1000000ull + tv.tv_usec;
 }
 
-#define MOVE_DURATION 1000000    /* half second */
+#define MOVE_DURATION 500000    /* half second */
 
 void animate()
 {
@@ -373,11 +393,7 @@ void animate()
     float p = (t - move_started_time) / (MOVE_DURATION / 100);
     float k = roundf(((float)d * 90.0f) / ((float)100.0f) * p);
     k = all_moves[i].dir < 0 ? -k : k;
-//    printf("p = %f, k = %f\n", p, k);
-
     all_moves[i].f(f, k * angle);
-
-    //animate
 }
 
 void handleKeyPress(SDL_Keysym *keysym) {
@@ -390,7 +406,7 @@ void handleKeyPress(SDL_Keysym *keysym) {
             continue ;
         if ((all_moves[i].kmod) && (keysym->mod != all_moves[i].kmod))
             continue ;
-        queue_enqueue(q, all_moves[i].m); // i      
+        queue_enqueue(q, all_moves[i].m); // i
         break ;
     }
 
@@ -472,11 +488,11 @@ int main(int argc, char **argv) {
             }
         }
         animate();
-        glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
+        glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         drawGLScene();
         SDL_GL_SwapWindow(window);
-    }    
+    }
     Quit(0);
     return (0);
 }
