@@ -38,11 +38,13 @@ enum moves
 
 } move;
 
+t_queue         *q;
 
 SDL_GLContext   *context;
 SDL_Window      *window;
 
 void Quit(int returnCode) {
+    queue_destroy(q);
     if (context)
         SDL_GL_DeleteContext(context);
     if (window)
@@ -182,45 +184,42 @@ void rotate_ints(int *face, int k)
 }
 
 
-//float angle = -0.0174533; // one degree
-float angle = -1.5708f;
 
-void rotate_Z(int *face, int rev)   //F, B
+void rotate_Z(int f, float angle)   //F, B
 {
     for (int idx=0; idx<9; idx++)
     {
-        int i=face[idx];
+        int i=faces[f][idx];
         for (int j=0; j<6; j++)
         {
             for (int k=0; k<4; k++)
-                rotateZ(cubes[i][j][k], angle * rev);
+                rotateZ(cubes[i][j][k], angle);
         }
     }
 }
 
-void rotate_Y(int *face, int rev)   //U, D
+void rotate_Y(int f, float angle)   //U, D
 {
     for (int idx=0; idx<9; idx++)
     {
-        int i=face[idx];
+        int i=faces[f][idx];
         for (int j=0; j<6; j++)
         {
             for (int k=0; k<4; k++)
-                rotateY(cubes[i][j][k], angle * rev);
+                rotateY(cubes[i][j][k], angle);
         }
     }
 }
 
-
-void rotate_X(int *face, int rev)   //R, L
+void rotate_X(int f, float angle)   //R, L
 {
     for (int idx=0; idx<9; idx++)
     {
-        int i=face[idx];
+        int i=faces[f][idx];
         for (int j=0; j<6; j++)
         {
             for (int k=0; k<4; k++)
-                rotateX(cubes[i][j][k], angle * rev);
+                rotateX(cubes[i][j][k], angle);
         }
     }
 }
@@ -286,18 +285,6 @@ int drawGLScene(GLvoid) {
     return (1);
 }
 
-
-uint64_t get_time_stamp()
-{
-    struct timeval  tv;
-
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000000ull + tv.tv_usec;
-}
-
-#define MOVE_DURATION 500000    /* half second */
-//static uint64_t move_started_time;
-
 typedef struct s_move
 {
     enum moves m;
@@ -305,7 +292,7 @@ typedef struct s_move
     int     kmod;
     char    *str;
     int     face;
-    void    (*f)();
+    void    (*f)(int, float);
     int     dir;
     int     rot;
     void    (*u)();
@@ -335,6 +322,64 @@ t_move  all_moves[] = {
     { L_2,     SDLK_l, KMOD_LCTRL , "L2", 5, &rotate_X,  2, 2, &update_left  }
 };
 
+
+uint64_t get_time_stamp()
+{
+    struct timeval  tv;
+
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000ull + tv.tv_usec;
+}
+
+#define MOVE_DURATION 1000000    /* half second */
+
+void animate()
+{
+
+    float angle = -0.0174533; // one degree
+    //float angle = -1.5708f;
+
+    static int i = -1;  //current_move
+    static uint64_t move_started_time;
+    static t_cube cubes_copy[27];
+    uint64_t t;
+
+    if ((i == -1) && (!queue_is_empty(q)))
+    {
+        i = queue_dequeue(q);
+        move_started_time = get_time_stamp();
+        memcpy(cubes_copy, cubes, sizeof(cubes));
+    }
+    if (i == -1)
+        return ;
+
+    t = get_time_stamp();
+    if (t > move_started_time + MOVE_DURATION)
+    {
+        memcpy(cubes, cubes_copy, sizeof(cubes));
+        int f = all_moves[i].face;
+        all_moves[i].f(f, all_moves[i].dir * 90 * angle);
+        rotate_ints(faces[f], all_moves[i].rot);
+        all_moves[i].u();
+        printf("%s\n", all_moves[i].str);
+        i = -1;
+        return animate();
+    }
+
+    memcpy(cubes, cubes_copy, sizeof(cubes));
+    int f = all_moves[i].face;
+    int d = all_moves[i].dir;
+    d = d < 0 ? -d : d;
+    float p = (t - move_started_time) / (MOVE_DURATION / 100);
+    float k = roundf(((float)d * 90.0f) / ((float)100.0f) * p);
+    k = all_moves[i].dir < 0 ? -k : k;
+//    printf("p = %f, k = %f\n", p, k);
+
+    all_moves[i].f(f, k * angle);
+
+    //animate
+}
+
 void handleKeyPress(SDL_Keysym *keysym) {
 
     for (int i=0; i<18; i++)
@@ -345,37 +390,14 @@ void handleKeyPress(SDL_Keysym *keysym) {
             continue ;
         if ((all_moves[i].kmod) && (keysym->mod != all_moves[i].kmod))
             continue ;
-
-        int f = all_moves[i].face;
-        all_moves[i].f(faces[f], all_moves[i].dir);
-        rotate_ints(faces[f], all_moves[i].rot);
-        all_moves[i].u();
-        printf("%s\n", all_moves[i].str);
+        queue_enqueue(q, all_moves[i].m); // i      
         break ;
-
     }
 
     switch (keysym->sym) {
         case SDLK_ESCAPE:
             Quit(0);
             break;
-//        case SDLK_a: {rotate_Z(faces[0], 0); rotate_ints(faces[0], 0); update_front(); printf("F \n"); break ;} //F
-//        case SDLK_z: {rotate_Z(faces[0], 1); rotate_ints(faces[0], 1); update_front(); printf("F'\n"); break ;} //F'
-//
-//        case SDLK_s: {rotate_Z(faces[1], 1); rotate_ints(faces[1], 0); update_back (); printf("B \n"); break ;} //B
-//        case SDLK_x: {rotate_Z(faces[1], 0); rotate_ints(faces[1], 1); update_back (); printf("B'\n"); break ;} //B'
-//
-//        case SDLK_d: {rotate_Y(faces[2], 0); rotate_ints(faces[2], 0); update_up   (); printf("U \n"); break ;} //U
-//        case SDLK_c: {rotate_Y(faces[2], 1); rotate_ints(faces[2], 1); update_up   (); printf("U'\n"); break ;} //U'
-//
-//        case SDLK_f: {rotate_Y(faces[3], 1); rotate_ints(faces[3], 0); update_down (); printf("D \n"); break ;} //D
-//        case SDLK_v: {rotate_Y(faces[3], 0); rotate_ints(faces[3], 1); update_down (); printf("D'\n"); break ;} //D'
-//
-//        case SDLK_g: {rotate_X(faces[4], 0); rotate_ints(faces[4], 0); update_right(); printf("R \n"); break ;} //R
-//        case SDLK_b: {rotate_X(faces[4], 1); rotate_ints(faces[4], 1); update_right(); printf("R'\n"); break ;} //R'
-//
-//        case SDLK_h: {rotate_X(faces[5], 1); rotate_ints(faces[5], 0); update_left (); printf("L \n"); break ;} //L
-//        case SDLK_n: {rotate_X(faces[5], 0); rotate_ints(faces[5], 1); update_left (); printf("L'\n"); break ;} //L'
 
         case SDLK_RIGHT: perspective_y += 11.25f; break ;
         case SDLK_LEFT:  perspective_y -= 11.25f; break ;
@@ -389,8 +411,30 @@ void handleKeyPress(SDL_Keysym *keysym) {
 
 int main(int argc, char **argv) {
     int done = 0;
+    char *delim = " \t\n\r\f\v";
     SDL_Event event;
     init_cubes();
+
+    q = queue_init();
+    for (int i=1; i<argc; i++)
+    {
+        char *s = argv[i];
+        for (int j=0; s[j]; j++)
+            s[j] = toupper(s[j]);
+        s = strtok(s, delim);
+        while (s)
+        {
+            for (int j=0; j<18; j++)
+            {
+                if (!strcmp(s, all_moves[j].str))
+                {
+                    queue_enqueue(q, all_moves[j].m);
+                    break ;
+                }
+            }
+            s = strtok(NULL, delim);
+        }
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -427,11 +471,12 @@ int main(int argc, char **argv) {
                     break;
             }
         }
+        animate();
         glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         drawGLScene();
         SDL_GL_SwapWindow(window);
-    }
+    }    
     Quit(0);
     return (0);
 }

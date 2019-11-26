@@ -1,18 +1,5 @@
 #include "visualizer.h"
 
-typedef struct s_node
-{
-    int             value;
-    struct s_node   *next;
-} t_node;
-
-
-typedef struct s_queue
-{
-    struct  s_node  *first;
-    struct  s_node  *last;
-} t_queue;
-
 t_queue     *queue_init()
 {
     t_queue *q;
