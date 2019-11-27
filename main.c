@@ -36,19 +36,19 @@ t_move  all_moves[] = {
     {SDLK_f, KMOD_LCTRL , "F2",  2},
     {SDLK_b, KMOD_NONE  , "B" , -1},
     {SDLK_b, KMOD_LSHIFT, "B'",  1},
-    {SDLK_b, KMOD_LCTRL , "B2",  2},
+    {SDLK_b, KMOD_LCTRL , "B2", -2},
     {SDLK_u, KMOD_NONE  , "U" ,  1},
     {SDLK_u, KMOD_LSHIFT, "U'", -1},
     {SDLK_u, KMOD_LCTRL , "U2",  2},
     {SDLK_d, KMOD_NONE  , "D" , -1},
     {SDLK_d, KMOD_LSHIFT, "D'",  1},
-    {SDLK_d, KMOD_LCTRL , "D2",  2},
+    {SDLK_d, KMOD_LCTRL , "D2", -2},
     {SDLK_r, KMOD_NONE  , "R" ,  1},
     {SDLK_r, KMOD_LSHIFT, "R'", -1},
     {SDLK_r, KMOD_LCTRL , "R2",  2},
     {SDLK_l, KMOD_NONE  , "L" , -1},
     {SDLK_l, KMOD_LSHIFT, "L'",  1},
-    {SDLK_l, KMOD_LCTRL , "L2",  2}
+    {SDLK_l, KMOD_LCTRL , "L2", -2}
 };
 
 
@@ -407,7 +407,7 @@ int main(int argc, char **argv) {
             {
                 if (!strcmp(s, all_moves[j].str))
                 {
-                    queue_enqueue(q, i);
+                    queue_enqueue(q, j);
                     break ;
                 }
             }
