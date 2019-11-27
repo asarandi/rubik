@@ -4,39 +4,53 @@
 #include <GL/glu.h>
 #include "SDL.h"
 
+void copy_faces();
+void update_neighbors(int f);
+
 extern int faces[6][9];
-
-void update_front();
-void update_back();
-void update_up();
-void update_down();
-void update_right();
-void update_left();
-
 extern float c[6][3];
 
-enum moves
-{
-    F,
-    F_PRIME,
-    F_2,
-    B,
-    B_PRIME,
-    B_2,
-    U,
-    U_PRIME,
-    U_2,
-    D,
-    D_PRIME,
-    D_2,
-    R,
-    R_PRIME,
-    R_2,
-    L,
-    L_PRIME,
-    L_2,
+int ctable [27][6];
 
-} move;
+float perspective_x = 35.264f;
+float perspective_y = -45.0f;
+
+#define CUBE_INNER_COLOR 0.08f, 0.08f, 0.08f
+
+#define MOVE_DURATION 500000    /* half second */
+# define ABS(i) ((i) < 0 ? -(i) : (i))
+
+typedef struct s_move
+{
+    int     sdlk;
+    int     kmod;
+    char    *str;
+    int     dir;
+} t_move;
+
+t_move  all_moves[] = {
+
+//  //sdlk,   kmod,        str,  func       rot
+    {SDLK_f, KMOD_NONE  , "F" ,  1},
+    {SDLK_f, KMOD_LSHIFT, "F'", -1},
+    {SDLK_f, KMOD_LCTRL , "F2",  2},
+    {SDLK_b, KMOD_NONE  , "B" , -1},
+    {SDLK_b, KMOD_LSHIFT, "B'",  1},
+    {SDLK_b, KMOD_LCTRL , "B2",  2},
+    {SDLK_u, KMOD_NONE  , "U" ,  1},
+    {SDLK_u, KMOD_LSHIFT, "U'", -1},
+    {SDLK_u, KMOD_LCTRL , "U2",  2},
+    {SDLK_d, KMOD_NONE  , "D" , -1},
+    {SDLK_d, KMOD_LSHIFT, "D'",  1},
+    {SDLK_d, KMOD_LCTRL , "D2",  2},
+    {SDLK_r, KMOD_NONE  , "R" ,  1},
+    {SDLK_r, KMOD_LSHIFT, "R'", -1},
+    {SDLK_r, KMOD_LCTRL , "R2",  2},
+    {SDLK_l, KMOD_NONE  , "L" , -1},
+    {SDLK_l, KMOD_LSHIFT, "L'",  1},
+    {SDLK_l, KMOD_LCTRL , "L2",  2}
+};
+
 
 t_queue         *q;
 
@@ -108,38 +122,61 @@ t_cube cubes[27];
 
 t_cube *make_cube(float x, float y, float z)
 {
+    int c[6][4][3] = {
+        {
+            {0, 0,  0}, //F
+            {0, 1,  0},
+            {1, 1,  0},
+            {1, 0,  0},
+        },
+        {
+            {0, 0, -1}, //B
+            {0, 1, -1},
+            {1, 1, -1},
+            {1, 0, -1},
+        },
+        {
+            {0, 1,  0}, //U
+            {0, 1, -1},
+            {1, 1, -1},
+            {1, 1,  0},
+        },
+        {
+            {0, 0,  0}, //D
+            {0, 0, -1},
+            {1, 0, -1},
+            {1, 0,  0},
+        },
+        {
+            {1, 0,  0}, //R
+            {1, 1,  0},
+            {1, 1, -1},
+            {1, 0, -1},
+        },
+        {
+            {0, 0,  0}, //L
+            {0, 1,  0},
+            {0, 1, -1},
+            {0, 0, -1},
+        },
+    };
+
     static t_cube  t;
-    static float u = 2.0f;
+    float u = 2.0f;
+    float f[3];
 
-    t[0][0][0] = x;    t[0][0][1] = y;    t[0][0][2] = z;   //A
-    t[0][1][0] = x;    t[0][1][1] = y+u;  t[0][1][2] = z;   //B
-    t[0][2][0] = x+u;  t[0][2][1] = y+u;  t[0][2][2] = z;   //C
-    t[0][3][0] = x+u;  t[0][3][1] = y;    t[0][3][2] = z;   //D
+    f[0] = x;
+    f[1] = y;
+    f[2] = z;
 
-    t[1][0][0] = x;    t[1][0][1] = y;    t[1][0][2] = z-u; //E
-    t[1][1][0] = x;    t[1][1][1] = y+u;  t[1][1][2] = z-u; //F
-    t[1][2][0] = x+u;  t[1][2][1] = y+u;  t[1][2][2] = z-u; //G
-    t[1][3][0] = x+u;  t[1][3][1] = y;    t[1][3][2] = z-u; //H
-
-    t[2][0][0] = x;    t[2][0][1] = y+u;  t[2][0][2] = z;   //B
-    t[2][1][0] = x;    t[2][1][1] = y+u;  t[2][1][2] = z-u; //F
-    t[2][2][0] = x+u;  t[2][2][1] = y+u;  t[2][2][2] = z-u; //G
-    t[2][3][0] = x+u;  t[2][3][1] = y+u;  t[2][3][2] = z;   //C
-
-    t[3][0][0] = x;    t[3][0][1] = y;    t[3][0][2] = z;   //A
-    t[3][1][0] = x;    t[3][1][1] = y;    t[3][1][2] = z-u; //E
-    t[3][2][0] = x+u;  t[3][2][1] = y;    t[3][2][2] = z-u; //H
-    t[3][3][0] = x+u;  t[3][3][1] = y;    t[3][3][2] = z;   //D
-
-    t[4][0][0] = x+u;  t[4][0][1] = y;    t[4][0][2] = z;   //D
-    t[4][1][0] = x+u;  t[4][1][1] = y+u;  t[4][1][2] = z;   //C
-    t[4][2][0] = x+u;  t[4][2][1] = y+u;  t[4][2][2] = z-u; //G
-    t[4][3][0] = x+u;  t[4][3][1] = y;    t[4][3][2] = z-u; //H
-
-    t[5][0][0] = x;    t[5][0][1] = y;    t[5][0][2] = z;   //A
-    t[5][1][0] = x;    t[5][1][1] = y+u;  t[5][1][2] = z;   //B
-    t[5][2][0] = x;    t[5][2][1] = y+u;  t[5][2][2] = z-u; //F
-    t[5][3][0] = x;    t[5][3][1] = y;    t[5][3][2] = z-u; //E
+    for (int i=0; i<6; i++)
+    {
+        for (int j=0; j<4; j++)
+        {
+            for (int k=0; k<3; k++)
+                t[i][j][k] = f[k] + c[i][j][k] * u;
+        }
+    }
     return &t;
 }
 
@@ -163,8 +200,6 @@ twice
 
 */
 
-
-
 void rotate_ints(int *face, int k)
 {
     int rot[3][9] = {
@@ -181,43 +216,22 @@ void rotate_ints(int *face, int k)
         face[i] = copy[rot[k][i]];
 }
 
-
-
-void rotate_Z(int f, float angle)   //F, B
+void rotate(int f, float angle)   //F, B
 {
+    void (*func[])(float *, float) =
+    {
+        &rotateZ,
+        &rotateY,
+        &rotateX
+    };
+
     for (int idx=0; idx<9; idx++)
     {
         int i=faces[f][idx];
         for (int j=0; j<6; j++)
         {
             for (int k=0; k<4; k++)
-                rotateZ(cubes[i][j][k], angle);
-        }
-    }
-}
-
-void rotate_Y(int f, float angle)   //U, D
-{
-    for (int idx=0; idx<9; idx++)
-    {
-        int i=faces[f][idx];
-        for (int j=0; j<6; j++)
-        {
-            for (int k=0; k<4; k++)
-                rotateY(cubes[i][j][k], angle);
-        }
-    }
-}
-
-void rotate_X(int f, float angle)   //R, L
-{
-    for (int idx=0; idx<9; idx++)
-    {
-        int i=faces[f][idx];
-        for (int j=0; j<6; j++)
-        {
-            for (int k=0; k<4; k++)
-                rotateX(cubes[i][j][k], angle);
+                func[f/2](cubes[i][j][k], angle);
         }
     }
 }
@@ -234,8 +248,6 @@ int *colors(int i, int j, int k)
     res[5] = i == -3;
     return res;
 }
-
-int ctable [27][6];
 
 void init_cubes()
 {
@@ -255,11 +267,6 @@ void init_cubes()
         }
     }
 }
-
-float perspective_x = 35.264f;
-float perspective_y = -45.0f;
-
-#define CUBE_INNER_COLOR 0.08f, 0.08f, 0.08f
 
 int drawGLScene(GLvoid) {
 
@@ -305,44 +312,6 @@ int drawGLScene(GLvoid) {
     return (1);
 }
 
-typedef struct s_move
-{
-    enum moves m;
-    int     sdlk;
-    int     kmod;
-    char    *str;
-    int     face;
-    void    (*f)(int, float);
-    int     dir;
-    int     rot;
-    void    (*u)();
-} t_move;
-
-t_move  all_moves[] = {
-
-//
-//    //move   sdlk,   kmod,        str,  face func     rot int  update
-    { F,       SDLK_f, KMOD_NONE  , "F" , 0, &rotate_Z,  1, 0, &update_front },
-    { F_PRIME, SDLK_f, KMOD_LSHIFT, "F'", 0, &rotate_Z, -1, 1, &update_front },
-    { F_2,     SDLK_f, KMOD_LCTRL , "F2", 0, &rotate_Z,  2, 2, &update_front },
-    { B,       SDLK_b, KMOD_NONE  , "B" , 1, &rotate_Z, -1, 0, &update_back  },
-    { B_PRIME, SDLK_b, KMOD_LSHIFT, "B'", 1, &rotate_Z,  1, 1, &update_back  },
-    { B_2,     SDLK_b, KMOD_LCTRL , "B2", 1, &rotate_Z,  2, 2, &update_back  },
-    { U,       SDLK_u, KMOD_NONE  , "U" , 2, &rotate_Y,  1, 0, &update_up    },
-    { U_PRIME, SDLK_u, KMOD_LSHIFT, "U'", 2, &rotate_Y, -1, 1, &update_up    },
-    { U_2,     SDLK_u, KMOD_LCTRL , "U2", 2, &rotate_Y,  2, 2, &update_up    },
-    { D,       SDLK_d, KMOD_NONE  , "D" , 3, &rotate_Y, -1, 0, &update_down  },
-    { D_PRIME, SDLK_d, KMOD_LSHIFT, "D'", 3, &rotate_Y,  1, 1, &update_down  },
-    { D_2,     SDLK_d, KMOD_LCTRL , "D2", 3, &rotate_Y,  2, 2, &update_down  },
-    { R,       SDLK_r, KMOD_NONE  , "R" , 4, &rotate_X,  1, 0, &update_right },
-    { R_PRIME, SDLK_r, KMOD_LSHIFT, "R'", 4, &rotate_X, -1, 1, &update_right },
-    { R_2,     SDLK_r, KMOD_LCTRL , "R2", 4, &rotate_X,  2, 2, &update_right },
-    { L,       SDLK_l, KMOD_NONE  , "L" , 5, &rotate_X, -1, 0, &update_left  },
-    { L_PRIME, SDLK_l, KMOD_LSHIFT, "L'", 5, &rotate_X,  1, 1, &update_left  },
-    { L_2,     SDLK_l, KMOD_LCTRL , "L2", 5, &rotate_X,  2, 2, &update_left  }
-};
-
-
 uint64_t get_time_stamp()
 {
     struct timeval  tv;
@@ -351,49 +320,42 @@ uint64_t get_time_stamp()
     return tv.tv_sec * 1000000ull + tv.tv_usec;
 }
 
-#define MOVE_DURATION 500000    /* half second */
-
 void animate()
 {
 
-    float angle = -0.0174533; // one degree
-    //float angle = -1.5708f;
-
-    static int i = -1;  //current_move
+    float p, k, angle = -0.0174533; // one degree
+    static int d, i = -1;  //current_move
     static uint64_t move_started_time;
     static t_cube cubes_copy[27];
     uint64_t t;
 
-    if ((i == -1) && (!queue_is_empty(q)))
+    if (i == -1)
     {
+        if (queue_is_empty(q))
+            return ;
         i = queue_dequeue(q);
         move_started_time = get_time_stamp();
         memcpy(cubes_copy, cubes, sizeof(cubes));
     }
-    if (i == -1)
-        return ;
 
     t = get_time_stamp();
+    d = all_moves[i].dir;
+
     if (t > move_started_time + MOVE_DURATION)
     {
         memcpy(cubes, cubes_copy, sizeof(cubes));
-        int f = all_moves[i].face;
-        all_moves[i].f(f, all_moves[i].dir * 90 * angle);
-        rotate_ints(faces[f], all_moves[i].rot);
-        all_moves[i].u();
+        rotate(i / 3, d * 90 * angle);
+        rotate_ints(faces[i / 3], i % 3);
+        update_neighbors(i / 3);
         printf("%s\n", all_moves[i].str);
         i = -1;
-        return animate();
+        return ;
     }
 
     memcpy(cubes, cubes_copy, sizeof(cubes));
-    int f = all_moves[i].face;
-    int d = all_moves[i].dir;
-    d = d < 0 ? -d : d;
-    float p = (t - move_started_time) / (MOVE_DURATION / 100);
-    float k = roundf(((float)d * 90.0f) / ((float)100.0f) * p);
-    k = all_moves[i].dir < 0 ? -k : k;
-    all_moves[i].f(f, k * angle);
+    p = (t - move_started_time) / (MOVE_DURATION / 100);
+    k = roundf(((float)ABS(d) * 90.0f) / ((float)100.0f) * p);
+    rotate(i / 3, d < 0 ? -k * angle : k * angle);
 }
 
 void handleKeyPress(SDL_Keysym *keysym) {
@@ -406,7 +368,7 @@ void handleKeyPress(SDL_Keysym *keysym) {
             continue ;
         if ((all_moves[i].kmod) && (keysym->mod != all_moves[i].kmod))
             continue ;
-        queue_enqueue(q, all_moves[i].m); // i
+        queue_enqueue(q, i);
         break ;
     }
 
@@ -430,6 +392,7 @@ int main(int argc, char **argv) {
     char *delim = " \t\n\r\f\v";
     SDL_Event event;
     init_cubes();
+    copy_faces();
 
     q = queue_init();
     for (int i=1; i<argc; i++)
@@ -444,7 +407,7 @@ int main(int argc, char **argv) {
             {
                 if (!strcmp(s, all_moves[j].str))
                 {
-                    queue_enqueue(q, all_moves[j].m);
+                    queue_enqueue(q, i);
                     break ;
                 }
             }
