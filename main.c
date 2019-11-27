@@ -124,40 +124,40 @@ t_cube *make_cube(float x, float y, float z)
 {
     int c[6][4][3] = {
         {
-            {0, 0,  0}, //F
-            {0, 1,  0},
-            {1, 1,  0},
-            {1, 0,  0},
+            {0, 0, 0}, //F
+            {0, 1, 0},
+            {1, 1, 0},
+            {1, 0, 0},
         },
         {
-            {0, 0, -1}, //B
-            {0, 1, -1},
-            {1, 1, -1},
-            {1, 0, -1},
+            {0, 0,-1}, //B
+            {0, 1,-1},
+            {1, 1,-1},
+            {1, 0,-1},
         },
         {
-            {0, 1,  0}, //U
-            {0, 1, -1},
-            {1, 1, -1},
-            {1, 1,  0},
+            {0, 1, 0}, //U
+            {0, 1,-1},
+            {1, 1,-1},
+            {1, 1, 0},
         },
         {
-            {0, 0,  0}, //D
-            {0, 0, -1},
-            {1, 0, -1},
-            {1, 0,  0},
+            {0, 0, 0}, //D
+            {0, 0,-1},
+            {1, 0,-1},
+            {1, 0, 0},
         },
         {
-            {1, 0,  0}, //R
-            {1, 1,  0},
-            {1, 1, -1},
-            {1, 0, -1},
+            {1, 0, 0}, //R
+            {1, 1, 0},
+            {1, 1,-1},
+            {1, 0,-1},
         },
         {
-            {0, 0,  0}, //L
-            {0, 1,  0},
-            {0, 1, -1},
-            {0, 0, -1},
+            {0, 0, 0}, //L
+            {0, 1, 0},
+            {0, 1,-1},
+            {0, 0,-1},
         },
     };
 
@@ -180,32 +180,12 @@ t_cube *make_cube(float x, float y, float z)
     return &t;
 }
 
-
-/*
-
-clockwise
-0 1 2      6 3 0
-3 4 5  =>  7 4 1
-6 7 8      8 5 2
-
-anti-clockwise
-0 1 2      2 5 8
-3 4 5  =>  1 4 7
-6 7 8      0 3 6
-
-twice
-0 1 2      8 7 6
-3 4 5  =>  5 4 3
-6 7 8      2 1 0
-
-*/
-
 void rotate_ints(int *face, int k)
 {
     int rot[3][9] = {
-        {6, 3, 0, 7, 4, 1, 8, 5, 2},
-        {2, 5, 8, 1, 4, 7, 0, 3, 6},
-        {8, 7, 6, 5, 4, 3, 2, 1, 0}
+        {6, 3, 0, 7, 4, 1, 8, 5, 2},    //clockwise
+        {2, 5, 8, 1, 4, 7, 0, 3, 6},    //anti-clockwise
+        {8, 7, 6, 5, 4, 3, 2, 1, 0}     //twice
         };
 
     int copy[9], i;
@@ -268,22 +248,25 @@ void init_cubes()
     }
 }
 
-int drawGLScene(GLvoid) {
-
+int drawGLScene(GLvoid)
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glLoadIdentity();
     glTranslatef(0.0f, 0.0f, -18.0f);
     glRotatef(perspective_x, 1.0f, 0.0f, 0.0f);
     glRotatef(perspective_y, 0.0f, 1.0f, 0.0f);
 
     glBegin(GL_QUADS);
+
     for (int i=0; i<27; i++)
     {
         for (int j=0; j<6; j++)
         {
             if (ctable[i][j])
-                glColor3f(c[j][0], c[j][1], c[j][2]);
+                glColor4f(c[j][0], c[j][1], c[j][2], 1.0f);
             else
-                glColor3f(CUBE_INNER_COLOR);
+                glColor4f(CUBE_INNER_COLOR, 1.0f);
 
             for (int k=0; k<4; k++)
                 glVertex3f(cubes[i][j][k][0], cubes[i][j][k][1], cubes[i][j][k][2]);
@@ -293,7 +276,8 @@ int drawGLScene(GLvoid) {
 
     glLineWidth(10.0f);
     glBegin(GL_LINES);
-    glColor3f(CUBE_INNER_COLOR);
+    glColor4f(CUBE_INNER_COLOR, 0.2f);
+
     int t[8] = {0,1,2,3,0,3,1,2};
     for (int i=0; i<27; i++)
     {
@@ -308,6 +292,7 @@ int drawGLScene(GLvoid) {
         }
     }
     glEnd();
+    glDisable(GL_BLEND);
 
     return (1);
 }
