@@ -1,11 +1,9 @@
-#include "visualizer.h"
+#include "queue.h"
 
-t_queue     *queue_init()
-{
+t_queue *queue_init() {
     t_queue *q;
 
-    if (!(q = malloc(sizeof(*q))))
-    {
+    if (!(q = malloc(sizeof(*q)))) {
         fprintf(stderr, "%s: malloc() failed\n", __func__);
         return NULL;
     }
@@ -13,25 +11,21 @@ t_queue     *queue_init()
     return q;
 }
 
-int         queue_is_empty(t_queue *q)
-{
+int queue_is_empty(t_queue *q) {
     return ((!q->first) || (!q->last));
 }
 
-void        queue_enqueue(t_queue *q, int value)
-{
-    t_node  *n;
+void queue_enqueue(t_queue *q, int value) {
+    t_node *n;
 
-    if (!q)
-    {
+    if (!q) {
         fprintf(stderr, "%s: no queue\n", __func__);
-        return ;
+        return;
     }
 
-    if (!(n = malloc(sizeof(*n))))
-    {
+    if (!(n = malloc(sizeof(*n)))) {
         fprintf(stderr, "%s: malloc() failed\n", __func__);
-        return ;
+        return;
     }
     n->value = value;
     n->next = NULL;
@@ -42,13 +36,11 @@ void        queue_enqueue(t_queue *q, int value)
     q->last = n;
 }
 
-int     queue_dequeue(t_queue *q)
-{
-    int     res;
-    t_node  *n;
+int queue_dequeue(t_queue *q) {
+    int res;
+    t_node *n;
 
-    if ((!q) || (queue_is_empty(q)))
-    {
+    if ((!q) || (queue_is_empty(q))) {
         fprintf(stderr, "%s: no queue or empty queue\n", __func__);
         return -1;
     }
@@ -61,15 +53,13 @@ int     queue_dequeue(t_queue *q)
     return res;
 }
 
-void    queue_destroy(t_queue *q)
-{
-    t_node  *n, *m;
+void queue_destroy(t_queue *q) {
+    t_node *n, *m;
 
     if (!q)
-        return ;
+        return;
     n = q->first;
-    while (n)
-    {
+    while (n) {
         m = n->next;
         free(n);
         n = m;

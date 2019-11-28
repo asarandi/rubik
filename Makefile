@@ -1,9 +1,9 @@
 NAME    = visualizer
-CFLAGS  += -g -Wall #-Werror
+CFLAGS  += -g -Wall -Werror -Wextra
 CFLAGS  += $(shell sdl2-config --cflags)
 LDFLAGS += $(shell sdl2-config --libs) -lGL -lGLU -lm
 
-SRC = cube.c faces.c main.c queue.c
+SRC = main.c queue.c
 OBJ = $(SRC:.c=.o)
 
 $(NAME): $(OBJ)
