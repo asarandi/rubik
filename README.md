@@ -19,4 +19,4 @@ f, b, u, d, r, l: rotate corresponding face clockwise
 - left ctrl: rotate anti-clockwise
 - left alt: rotate twice
 
-![video](https://s5.gifyu.com/images/rubik.gif)
+![rubik](https://i.imgur.com/Nlu68lB.gif)
