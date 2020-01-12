@@ -69,13 +69,68 @@ float cube_colors[6][3] =
         };
 
 int faces_array[6][9] = {
+
+//                   FL      FR
         {6,  15, 24, 3,  12, 21, 0,  9,  18}, // 0 F green
+//                   BR      BL
         {26, 17, 8,  23, 14, 5,  20, 11, 2},  // 1 B blue
+//      ubl  UB urb  UL      UR ulf  UF  ufr
         {8,  17, 26, 7,  16, 25, 6,  15, 24}, // 2 U white
+
+//      dfl  DF  drf DL      DR  dlb DB  dbr
         {0,  9,  18, 1,  10, 19, 2,  11, 20}, // 3 D yellow
         {24, 25, 26, 21, 22, 23, 18, 19, 20}, // 4 R red
         {8,  7,  6,  5,  4,  3,  2,  1,  0}   // 5 L orange
 };
+
+//{15,25,17,7,  9, 19,11,1   21,3, 23,5}
+// UF UR UB UL  DF DR DB DL  FR FL BR BL
+// UF UR UB UL  DF DR DB DL  FR FL BR BL
+// 24, 26, 8,  6,  18, 0,  2,  20
+// UFR URB UBL ULF DRF DFL DLB DBR
+
+
+int edges_numeric[12] =  { 15,   25,   17,   7,    9,    19,   11,   1,    21,   3,    23,   5};
+char *edges_string[12] = {"UF", "UR", "UB", "UL", "DF", "DR", "DB", "DL", "FR", "FL", "BR", "BL"};
+
+typedef struct s_cubie
+{
+    int face;       /* 0-5 for faces_array */
+    int face_idx;   /* 1,3,5,7 edges, 0,2,6,8 corners */
+    int cube_idx;   /* for cube array */
+    char *name;     /* string */
+} t_cubie;
+
+t_cubie edges[] =
+{
+    { 2, 7, 15, "UF" },
+    { 2, 5, 25, "UR" },
+    { 2, 1, 17, "UB" },
+    { 2, 3,  7, "UL" },
+    { 3, 1,  9, "DF" },
+    { 3, 5, 19, "DR" },
+    { 3, 7, 11, "DB" },
+    { 3, 3,  1, "DL" },
+    { 0, 5, 21, "FR" },
+    { 0, 3,  3, "FL" },
+    { 1, 3, 23, "BR" },
+    { 1, 5,  5, "BL" },
+};
+
+t_cubie corners[] =
+{
+    { 2, 8, 24, "UFR" },
+    { 2, 2, 26, "URB" },
+    { 2, 0,  8, "UBL" },
+    { 2, 6,  6, "ULF" },
+    { 3, 2, 18, "DRF" },
+    { 3, 0,  0, "DFL" },
+    { 3, 6,  2, "DLB" },
+    { 3, 8, 20, "DBR" },
+};
+
+
+
 
 int faces_array_copy[6][9];
 
