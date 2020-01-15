@@ -58,78 +58,111 @@ typedef float t_cube[6][4][3];
 t_cube cube_array[27];
 t_cube cube_array_copy[27];
 
-float cube_colors[6][3] =
-        {
-                {0.00f, 0.61f, 0.28f},  //F - green
-                {0.00f, 0.27f, 0.68f},  //B - blue
-                {1.00f, 1.00f, 1.00f},  //U - white
-                {1.00f, 0.84f, 0.00f},  //D - yellow
-                {0.72f, 0.07f, 0.20f},  //R - red
-                {1.00f, 0.35f, 0.00f}   //L - orange
-        };
+float cube_colors[6][3] = {
+    {0.00f, 0.61f, 0.28f},  //F - green
+    {0.00f, 0.27f, 0.68f},  //B - blue
+    {1.00f, 1.00f, 1.00f},  //U - white
+    {1.00f, 0.84f, 0.00f},  //D - yellow
+    {0.72f, 0.07f, 0.20f},  //R - red
+    {1.00f, 0.35f, 0.00f}   //L - orange
+};
 
 int faces_array[6][9] = {
-
-//                   FL      FR
-        {6,  15, 24, 3,  12, 21, 0,  9,  18}, // 0 F green
-//                   BR      BL
-        {26, 17, 8,  23, 14, 5,  20, 11, 2},  // 1 B blue
-//      ubl  UB urb  UL      UR ulf  UF  ufr
-        {8,  17, 26, 7,  16, 25, 6,  15, 24}, // 2 U white
-
-//      dfl  DF  drf DL      DR  dlb DB  dbr
-        {0,  9,  18, 1,  10, 19, 2,  11, 20}, // 3 D yellow
-        {24, 25, 26, 21, 22, 23, 18, 19, 20}, // 4 R red
-        {8,  7,  6,  5,  4,  3,  2,  1,  0}   // 5 L orange
+    {6,  15, 24, 3,  12, 21, 0,  9,  18}, // 0 F green
+    {26, 17, 8,  23, 14, 5,  20, 11, 2},  // 1 B blue
+    {8,  17, 26, 7,  16, 25, 6,  15, 24}, // 2 U white
+    {0,  9,  18, 1,  10, 19, 2,  11, 20}, // 3 D yellow
+    {24, 25, 26, 21, 22, 23, 18, 19, 20}, // 4 R red
+    {8,  7,  6,  5,  4,  3,  2,  1,  0}   // 5 L orange
 };
 
-//{15,25,17,7,  9, 19,11,1   21,3, 23,5}
-// UF UR UB UL  DF DR DB DL  FR FL BR BL
-// UF UR UB UL  DF DR DB DL  FR FL BR BL
-// 24, 26, 8,  6,  18, 0,  2,  20
-// UFR URB UBL ULF DRF DFL DLB DBR
-
-
-int edges_numeric[12] =  { 15,   25,   17,   7,    9,    19,   11,   1,    21,   3,    23,   5};
-char *edges_string[12] = {"UF", "UR", "UB", "UL", "DF", "DR", "DB", "DL", "FR", "FL", "BR", "BL"};
-
-typedef struct s_cubie
-{
-    int face;       /* 0-5 for faces_array */
-    int face_idx;   /* 1,3,5,7 edges, 0,2,6,8 corners */
-    int cube_idx;   /* for cube array */
-    char *name;     /* string */
-} t_cubie;
-
-t_cubie edges[] =
-{
-    { 2, 7, 15, "UF" },
-    { 2, 5, 25, "UR" },
-    { 2, 1, 17, "UB" },
-    { 2, 3,  7, "UL" },
-    { 3, 1,  9, "DF" },
-    { 3, 5, 19, "DR" },
-    { 3, 7, 11, "DB" },
-    { 3, 3,  1, "DL" },
-    { 0, 5, 21, "FR" },
-    { 0, 3,  3, "FL" },
-    { 1, 3, 23, "BR" },
-    { 1, 5,  5, "BL" },
+char *edge_orientation_names[2][12] = {
+    {"UF", "UR", "UB", "UL", "DF", "DR", "DB", "DL", "FR", "FL", "BR", "BL"},
+    {"FU", "RU", "BU", "LU", "FD", "RD", "BD", "LD", "RF", "LF", "RB", "LB"},
 };
 
-t_cubie corners[] =
-{
-    { 2, 8, 24, "UFR" },
-    { 2, 2, 26, "URB" },
-    { 2, 0,  8, "UBL" },
-    { 2, 6,  6, "ULF" },
-    { 3, 2, 18, "DRF" },
-    { 3, 0,  0, "DFL" },
-    { 3, 6,  2, "DLB" },
-    { 3, 8, 20, "DBR" },
+char *corner_orientation_names[3][8] = {
+    {"UFR", "URB", "UBL", "ULF", "DRF", "DFL", "DLB", "DBR"},
+    {"RUF", "BUR", "LUB", "FUL", "FDR", "LDF", "BDL", "RDB"},
+    {"FRU", "RBU", "BLU", "LFU", "RFD", "FLD", "LBD", "BRD"},
+};
+
+int edges[] = {0,1,2,3,4,5,6,7,8,9,10,11};
+int edge_orientations[] = {0,0,0,0,0,0,0,0,0,0,0,0};
+int corners[] = {0,1,2,3,4,5,6,7};
+int corner_orientations[] = {0,0,0,0,0,0,0,0};
+
+
+int moving_edges[6][4] = {
+
+    {0,   9,   4,   8},   // F
+    {2,   10,  6,   11},  // B
+    {0,   1,   2,   3},   // U
+    {4,   5,   6,   7},   // D
+    {1,   8,   5,   10},  // R
+    {3,   11,  7,   9},   // L
+};
+
+int moving_corners[6][4] = {
+    {0,   3,   5,   4},   // F
+    {6,   2,   1,   7},   // B
+    {0,   1,   2,   3},   // U
+    {4,   5,   6,   7},   // D
+    {0,   4,   7,   1},   // R
+    {6,   5,   3,   2},   // L
 };
 
 
+void move_cubies(int f, int move)
+{
+    int i, j, k;
+    int edges_copy[12], corners_copy[8];
+    int rotations[3][4] = {
+        {1, 2, 3, 0},   // clockwise
+        {3, 0, 1, 2},   // anti-clockwise
+        {2, 3, 0, 1}    // twice
+    };
+
+    for (i=0; i<12; i++)
+        edges_copy[i] = edges[i];
+    for (i=0; i<4; i++)
+    {
+        j = moving_edges[f][i];
+        k = moving_edges[f][rotations[move][i]];
+        edges[j] = edges_copy[k];
+        if ((f < 2) && (move < 2))  // F, B and F', B' only
+            edge_orientations[j] = (edge_orientations[j] + 1) & 1;
+    }
+
+    for (i=0; i<8; i++)
+        corners_copy[i] = corners[i];
+    for (i=0; i<4; i++)
+    {
+        j = moving_corners[f][i];
+        k = moving_corners[f][rotations[move][i]];
+        corners[j] = corners_copy[k];
+        if ((f != 2) && (f != 3) && (move < 2)) // FIXME
+            corner_orientations[j] = (corner_orientations[j] + (((move * 2) + 1) + (i & 1))) % 3;
+    }
+}
+
+void print_cube()
+{
+    int i, j, k;
+
+    for (i=0; i<12; i++)
+    {
+        j = edge_orientations[i];
+        k = edges[i];
+        printf("%s%s", edge_orientation_names[j][k], " ");
+    }
+    for (i=0; i<8; i++)
+    {
+        j = corner_orientations[i];
+        k = corners[i];
+        printf("%s%s", corner_orientation_names[j][k], i + 1 < 8 ? " " : "\n");
+    }
+}
 
 
 int faces_array_copy[6][9];
@@ -325,6 +358,7 @@ void process_moves() {
         memcpy(cube_array, cube_array_copy, sizeof(cube_array));
         rotate_face_floats(i / 3, d * 90 * ONE_DEGREE);
         rotate_face_ints(i / 3, i % 3);
+        move_cubies(i / 3, i % 3);
         update_neighbors(i / 3);
         //printf("%s\n", moves[i].str);
         i = -1;
@@ -405,6 +439,9 @@ void handle_key_press(SDL_Keysym *keysym) {
     }
 
     switch (keysym->sym) {
+        case SDLK_p:
+            print_cube();
+            break;
         case SDLK_ESCAPE:
             quit(0);
             break;
