@@ -7,8 +7,10 @@
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
 #else
+
 #include <GL/gl.h>
 #include <GL/glu.h>
+
 #endif
 
 #include "SDL.h"
@@ -33,22 +35,22 @@ typedef struct s_move {
 } t_move;
 
 t_move moves[] = {
-        {SDLK_f, KMOD_NONE,   "F",  1},
+        {SDLK_f, KMOD_NONE,  "F",  1},
         {SDLK_f, KMOD_LCTRL, "F'", -1},
         {SDLK_f, KMOD_LALT,  "F2", 2},
-        {SDLK_b, KMOD_NONE,   "B",  -1},
+        {SDLK_b, KMOD_NONE,  "B",  -1},
         {SDLK_b, KMOD_LCTRL, "B'", 1},
         {SDLK_b, KMOD_LALT,  "B2", -2},
-        {SDLK_u, KMOD_NONE,   "U",  1},
+        {SDLK_u, KMOD_NONE,  "U",  1},
         {SDLK_u, KMOD_LCTRL, "U'", -1},
         {SDLK_u, KMOD_LALT,  "U2", 2},
-        {SDLK_d, KMOD_NONE,   "D",  -1},
+        {SDLK_d, KMOD_NONE,  "D",  -1},
         {SDLK_d, KMOD_LCTRL, "D'", 1},
         {SDLK_d, KMOD_LALT,  "D2", -2},
-        {SDLK_r, KMOD_NONE,   "R",  1},
+        {SDLK_r, KMOD_NONE,  "R",  1},
         {SDLK_r, KMOD_LCTRL, "R'", -1},
         {SDLK_r, KMOD_LALT,  "R2", 2},
-        {SDLK_l, KMOD_NONE,   "L",  -1},
+        {SDLK_l, KMOD_NONE,  "L",  -1},
         {SDLK_l, KMOD_LCTRL, "L'", 1},
         {SDLK_l, KMOD_LALT,  "L2", -2}
 };
@@ -59,105 +61,105 @@ t_cube cube_array[27];
 t_cube cube_array_copy[27];
 
 float cube_colors[6][3] = {
-    {0.00f, 0.61f, 0.28f},  //F - green
-    {0.00f, 0.27f, 0.68f},  //B - blue
-    {1.00f, 1.00f, 1.00f},  //U - white
-    {1.00f, 0.84f, 0.00f},  //D - yellow
-    {0.72f, 0.07f, 0.20f},  //R - red
-    {1.00f, 0.35f, 0.00f}   //L - orange
+        {0.00f, 0.61f, 0.28f},  //F - green
+        {0.00f, 0.27f, 0.68f},  //B - blue
+        {1.00f, 1.00f, 1.00f},  //U - white
+        {1.00f, 0.84f, 0.00f},  //D - yellow
+        {0.72f, 0.07f, 0.20f},  //R - red
+        {1.00f, 0.35f, 0.00f}   //L - orange
 };
 
 int faces_array[6][9] = {
-    {6,  15, 24, 3,  12, 21, 0,  9,  18}, // 0 F green
-    {26, 17, 8,  23, 14, 5,  20, 11, 2},  // 1 B blue
-    {8,  17, 26, 7,  16, 25, 6,  15, 24}, // 2 U white
-    {0,  9,  18, 1,  10, 19, 2,  11, 20}, // 3 D yellow
-    {24, 25, 26, 21, 22, 23, 18, 19, 20}, // 4 R red
-    {8,  7,  6,  5,  4,  3,  2,  1,  0}   // 5 L orange
+        {6,  15, 24, 3,  12, 21, 0,  9,  18}, // 0 F green
+        {26, 17, 8,  23, 14, 5,  20, 11, 2},  // 1 B blue
+        {8,  17, 26, 7,  16, 25, 6,  15, 24}, // 2 U white
+        {0,  9,  18, 1,  10, 19, 2,  11, 20}, // 3 D yellow
+        {24, 25, 26, 21, 22, 23, 18, 19, 20}, // 4 R red
+        {8,  7,  6,  5,  4,  3,  2,  1,  0}   // 5 L orange
 };
 
 char *edge_orientation_names[2][12] = {
-    {"UF", "UR", "UB", "UL", "DF", "DR", "DB", "DL", "FR", "FL", "BR", "BL"},
-    {"FU", "RU", "BU", "LU", "FD", "RD", "BD", "LD", "RF", "LF", "RB", "LB"},
+        {"UF", "UR", "UB", "UL", "DF", "DR", "DB", "DL", "FR", "FL", "BR", "BL"},
+        {"FU", "RU", "BU", "LU", "FD", "RD", "BD", "LD", "RF", "LF", "RB", "LB"},
 };
 
 char *corner_orientation_names[3][8] = {
-    {"UFR", "URB", "UBL", "ULF", "DRF", "DFL", "DLB", "DBR"},
-    {"RUF", "BUR", "LUB", "FUL", "FDR", "LDF", "BDL", "RDB"},
-    {"FRU", "RBU", "BLU", "LFU", "RFD", "FLD", "LBD", "BRD"},
+        {"UFR", "URB", "UBL", "ULF", "DRF", "DFL", "DLB", "DBR"},
+        {"RUF", "BUR", "LUB", "FUL", "FDR", "LDF", "BDL", "RDB"},
+        {"FRU", "RBU", "BLU", "LFU", "RFD", "FLD", "LBD", "BRD"},
 };
 
-int edges[] = {0,1,2,3,4,5,6,7,8,9,10,11};
-int edge_orientations[] = {0,0,0,0,0,0,0,0,0,0,0,0};
-int corners[] = {0,1,2,3,4,5,6,7};
-int corner_orientations[] = {0,0,0,0,0,0,0,0};
+int edges[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+int edge_orientations[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int corners[] = {0, 1, 2, 3, 4, 5, 6, 7};
+int corner_orientations[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 
 int moving_edges[6][4] = {
 
-    {0,   9,   4,   8},   // F
-    {2,   10,  6,   11},  // B
-    {0,   1,   2,   3},   // U
-    {4,   5,   6,   7},   // D
-    {1,   8,   5,   10},  // R
-    {3,   11,  7,   9},   // L
+        {0, 9,  4, 8},   // F
+        {2, 10, 6, 11},  // B
+        {0, 1,  2, 3},   // U
+        {4, 7,  6, 5},   // D
+        {1, 8,  5, 10},  // R
+        {3, 11, 7, 9},   // L
 };
 
 int moving_corners[6][4] = {
-    {0,   3,   5,   4},   // F
-    {6,   2,   1,   7},   // B
-    {0,   1,   2,   3},   // U
-    {4,   5,   6,   7},   // D
-    {0,   4,   7,   1},   // R
-    {6,   5,   3,   2},   // L
+        {0, 3, 5, 4},   // F
+        {2, 1, 7, 6},   // B
+        {0, 1, 2, 3},   // U
+        {4, 5, 6, 7},   // D
+        {1, 0, 4, 7},   // R
+        {3, 2, 6, 5},   // L
 };
 
 
-void move_cubies(int f, int move)
-{
+void move_cubies(int f, int move) {
     int i, j, k;
     int edges_copy[12], corners_copy[8];
+    int edge_orientations_copy[12], corner_orientations_copy[8];
     int rotations[3][4] = {
-        {1, 2, 3, 0},   // clockwise
-        {3, 0, 1, 2},   // anti-clockwise
-        {2, 3, 0, 1}    // twice
+            {1, 2, 3, 0},   // clockwise
+            {3, 0, 1, 2},   // anti-clockwise
+            {2, 3, 0, 1}    // twice
     };
 
-    for (i=0; i<12; i++)
+    for (i = 0; i < 12; i++) {
         edges_copy[i] = edges[i];
-    for (i=0; i<4; i++)
-    {
+        edge_orientations_copy[i] = edge_orientations[i];
+        if (i > 7)
+            continue;
+        corners_copy[i] = corners[i];
+        corner_orientations_copy[i] = corner_orientations[i];
+    }
+
+    for (i = 0; i < 4; i++) {
         j = moving_edges[f][i];
         k = moving_edges[f][rotations[move][i]];
         edges[j] = edges_copy[k];
-        if ((f < 2) && (move < 2))  // F, B and F', B' only
-            edge_orientations[j] = (edge_orientations[j] + 1) & 1;
-    }
+        edge_orientations[j] = edge_orientations_copy[k];
+        if ((f < 2) && (move < 2))
+            edge_orientations[j] ^= 1;
 
-    for (i=0; i<8; i++)
-        corners_copy[i] = corners[i];
-    for (i=0; i<4; i++)
-    {
         j = moving_corners[f][i];
         k = moving_corners[f][rotations[move][i]];
         corners[j] = corners_copy[k];
-        if ((f != 2) && (f != 3) && (move < 2)) // FIXME
-            corner_orientations[j] = (corner_orientations[j] + (((move * 2) + 1) + (i & 1))) % 3;
+        corner_orientations[j] = corner_orientations_copy[k];
+        if ((f != 2) && (f != 3) && (move < 2))
+            corner_orientations[j] = (corner_orientations[j] + (2 - (i & 1))) % 3;
     }
 }
 
-void print_cube()
-{
+void print_cube() {
     int i, j, k;
 
-    for (i=0; i<12; i++)
-    {
+    for (i = 0; i < 12; i++) {
         j = edge_orientations[i];
         k = edges[i];
         printf("%s%s", edge_orientation_names[j][k], " ");
     }
-    for (i=0; i<8; i++)
-    {
+    for (i = 0; i < 8; i++) {
         j = corner_orientations[i];
         k = corners[i];
         printf("%s%s", corner_orientation_names[j][k], i + 1 < 8 ? " " : "\n");
