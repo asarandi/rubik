@@ -1,20 +1,18 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdint.h>
 #include <sys/time.h>
 
 #if defined(__APPLE__)
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
+
+# include <OpenGL/gl.h>
+# include <OpenGL/glu.h>
+
 #else
-
-#include <GL/gl.h>
-#include <GL/glu.h>
-
+# include <GL/gl.h>
+# include <GL/glu.h>
 #endif
 
 #include "SDL.h"
-#include "queue.h"
+#include "rubik.h"
 
 # define SCREEN_WIDTH  640
 # define SCREEN_HEIGHT 480
@@ -78,92 +76,47 @@ int faces_array[6][9] = {
         {8,  7,  6,  5,  4,  3,  2,  1,  0}   // 5 L orange
 };
 
-char *edge_orientation_names[2][12] = {
-        {"UF", "UR", "UB", "UL", "DF", "DR", "DB", "DL", "FR", "FL", "BR", "BL"},
-        {"FU", "RU", "BU", "LU", "FD", "RD", "BD", "LD", "RF", "LF", "RB", "LB"},
+t_state cube_state = {
+        NULL,
+        -1,
+        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0},
+        {0, 1, 2, 3, 4, 5, 6, 7},
+        {0, 0, 0, 0, 0, 0, 0, 0},
 };
 
-char *corner_orientation_names[3][8] = {
-        {"UFR", "URB", "UBL", "ULF", "DRF", "DFL", "DLB", "DBR"},
-        {"RUF", "BUR", "LUB", "FUL", "FDR", "LDF", "BDL", "RDB"},
-        {"FRU", "RBU", "BLU", "LFU", "RFD", "FLD", "LBD", "BRD"},
-};
-
-int edges[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-int edge_orientations[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-int corners[] = {0, 1, 2, 3, 4, 5, 6, 7};
-int corner_orientations[] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-
-int moving_edges[6][4] = {
-
-        {0, 9,  4, 8},   // F
-        {2, 10, 6, 11},  // B
-        {0, 1,  2, 3},   // U
-        {4, 7,  6, 5},   // D
-        {1, 8,  5, 10},  // R
-        {3, 11, 7, 9},   // L
-};
-
-int moving_corners[6][4] = {
-        {0, 3, 5, 4},   // F
-        {2, 1, 7, 6},   // B
-        {0, 1, 2, 3},   // U
-        {4, 5, 6, 7},   // D
-        {1, 0, 4, 7},   // R
-        {3, 2, 6, 5},   // L
-};
-
-
-void move_cubies(int f, int move) {
-    int i, j, k;
-    int edges_copy[12], corners_copy[8];
-    int edge_orientations_copy[12], corner_orientations_copy[8];
-    int rotations[3][4] = {
-            {1, 2, 3, 0},   // clockwise
-            {3, 0, 1, 2},   // anti-clockwise
-            {2, 3, 0, 1}    // twice
+void print_cube(t_state *cube) {
+    char *edge_orientation_names[2][12] = {
+            {"UF", "UR", "UB", "UL", "DF", "DR", "DB", "DL", "FR", "FL", "BR", "BL"},
+            {"FU", "RU", "BU", "LU", "FD", "RD", "BD", "LD", "RF", "LF", "RB", "LB"},
     };
-
-    for (i = 0; i < 12; i++) {
-        edges_copy[i] = edges[i];
-        edge_orientations_copy[i] = edge_orientations[i];
-        if (i > 7)
-            continue;
-        corners_copy[i] = corners[i];
-        corner_orientations_copy[i] = corner_orientations[i];
-    }
-
-    for (i = 0; i < 4; i++) {
-        j = moving_edges[f][i];
-        k = moving_edges[f][rotations[move][i]];
-        edges[j] = edges_copy[k];
-        edge_orientations[j] = edge_orientations_copy[k];
-        if ((f < 2) && (move < 2))
-            edge_orientations[j] ^= 1;
-
-        j = moving_corners[f][i];
-        k = moving_corners[f][rotations[move][i]];
-        corners[j] = corners_copy[k];
-        corner_orientations[j] = corner_orientations_copy[k];
-        if ((f != 2) && (f != 3) && (move < 2))
-            corner_orientations[j] = (corner_orientations[j] + (2 - (i & 1))) % 3;
-    }
-}
-
-void print_cube() {
+    char *corner_orientation_names[3][8] = {
+            {"UFR", "URB", "UBL", "ULF", "DRF", "DFL", "DLB", "DBR"},
+            {"RUF", "BUR", "LUB", "FUL", "FDR", "LDF", "BDL", "RDB"},
+            {"FRU", "RBU", "BLU", "LFU", "RFD", "FLD", "LBD", "BRD"},
+    };
     int i, j, k;
 
     for (i = 0; i < 12; i++) {
-        j = edge_orientations[i];
-        k = edges[i];
+        j = cube->edge_orientations[i];
+        k = cube->edges[i];
         printf("%s%s", edge_orientation_names[j][k], " ");
     }
     for (i = 0; i < 8; i++) {
-        j = corner_orientations[i];
-        k = corners[i];
+        j = cube->corner_orientations[i];
+        k = cube->corners[i];
         printf("%s%s", corner_orientation_names[j][k], i + 1 < 8 ? " " : "\n");
     }
+
+    for (i = 0; i < 12; i++)
+        printf("%02x%s", cube->edges[i], " ");
+    for (i = 0; i < 8; i++)
+        printf("%02x%s", cube->corners[i], i + 1 < 8 ? " " : "\n");
+    for (i = 0; i < 12; i++)
+        printf("%02x%s", cube->edge_orientations[i], " ");
+    for (i = 0; i < 8; i++)
+        printf("%02x%s", cube->corner_orientations[i], i + 1 < 8 ? " " : "\n");
+    printf("move = %s\n", moves[(int)cube->move].str);
 }
 
 
@@ -347,7 +300,7 @@ void process_moves() {
     if (i == -1) {
         if (queue_is_empty(q))
             return;
-        i = queue_dequeue(q);
+        i = (int) queue_dequeue(q);
         move_started_time = get_time_stamp();
         memcpy(cube_array_copy, cube_array, sizeof(cube_array));
         return;
@@ -358,9 +311,9 @@ void process_moves() {
 
     if (t > move_started_time + MOVE_DURATION) {
         memcpy(cube_array, cube_array_copy, sizeof(cube_array));
-        rotate_face_floats(i / 3, d * 90 * ONE_DEGREE);
+        rotate_face_floats(i / 3, (float) d * 90 * ONE_DEGREE);
         rotate_face_ints(i / 3, i % 3);
-        move_cubies(i / 3, i % 3);
+        move_state(&cube_state, i / 3, i % 3);
         update_neighbors(i / 3);
         //printf("%s\n", moves[i].str);
         i = -1;
@@ -368,7 +321,7 @@ void process_moves() {
     }
 
     memcpy(cube_array, cube_array_copy, sizeof(cube_array));
-    p = (t - move_started_time) / (MOVE_DURATION / 100);
+    p = (float) (t - move_started_time) / ((float) MOVE_DURATION / 100);
     k = roundf(((float) ABS(d) * 90.0f) / ((float) 100.0f) * p);
     rotate_face_floats(i / 3, d < 0 ? -k * ONE_DEGREE : k * ONE_DEGREE);
 }
@@ -436,13 +389,16 @@ void handle_key_press(SDL_Keysym *keysym) {
             continue;
         if ((moves[i].kmod) && (keysym->mod != moves[i].kmod))
             continue;
-        queue_enqueue(q, i);
+        queue_enqueue(q, (void *) (intptr_t) i);
         break;
     }
 
     switch (keysym->sym) {
         case SDLK_p:
-            print_cube();
+            print_cube(&cube_state);
+            break;
+        case SDLK_s:
+            solve(&cube_state);
             break;
         case SDLK_ESCAPE:
             quit(0);
@@ -462,7 +418,6 @@ void handle_key_press(SDL_Keysym *keysym) {
         default:
             break;
     }
-    return;
 }
 
 void read_input(int argc, char **argv) {
@@ -472,12 +427,12 @@ void read_input(int argc, char **argv) {
     for (i = 1; i < argc; i++) {
         s = argv[i];
         for (j = 0; s[j]; j++)
-            s[j] = toupper(s[j]);
+            s[j] = (char) toupper(s[j]);
         s = strtok(s, delim);
         while (s) {
             for (j = 0; j < 18; j++) {
                 if (!strcmp(s, moves[j].str)) {
-                    queue_enqueue(q, j);
+                    queue_enqueue(q, (void *) (intptr_t) j);
                     break;
                 }
             }

@@ -3,7 +3,7 @@ CFLAGS  += -g -Wall -Werror -Wextra
 CFLAGS  += $(shell sdl2-config --cflags)
 LDFLAGS += $(shell sdl2-config --libs) -lm
 
-SRC = main.c queue.c
+SRC = ht.c main.c queue.c solver.c
 OBJ = $(SRC:.c=.o)
 
 UNAME	:= $(shell uname -s)

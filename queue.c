@@ -15,7 +15,7 @@ int queue_is_empty(t_queue *q) {
     return ((!q->first) || (!q->last));
 }
 
-void queue_enqueue(t_queue *q, int value) {
+void queue_enqueue(t_queue *q, void *data) {
     t_node *n;
 
     if (!q) {
@@ -27,7 +27,7 @@ void queue_enqueue(t_queue *q, int value) {
         fprintf(stderr, "%s: malloc() failed\n", __func__);
         return;
     }
-    n->value = value;
+    n->data = data;
     n->next = NULL;
     if (!q->first)
         q->first = n;
@@ -36,19 +36,19 @@ void queue_enqueue(t_queue *q, int value) {
     q->last = n;
 }
 
-int queue_dequeue(t_queue *q) {
-    int res;
+void *queue_dequeue(t_queue *q) {
+    void *res;
     t_node *n;
 
     if ((!q) || (queue_is_empty(q))) {
         fprintf(stderr, "%s: no queue or empty queue\n", __func__);
-        return -1;
+        return NULL;
     }
     n = q->first;
     q->first = n->next;
     if (!n->next)
         q->last = NULL;
-    res = n->value;
+    res = n->data;
     free(n);
     return res;
 }
@@ -61,6 +61,7 @@ void queue_destroy(t_queue *q) {
     n = q->first;
     while (n) {
         m = n->next;
+        /* free(n->data) */
         free(n);
         n = m;
     }
