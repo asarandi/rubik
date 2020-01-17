@@ -1,4 +1,4 @@
-#include "ht.h"
+#include "rubik.h"
 
 static int is_equal(t_state *a, t_state *b) {
     return !memcmp(a->edges, b->edges, 40);

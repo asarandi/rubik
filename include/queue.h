@@ -1,15 +1,6 @@
 #ifndef QUEUE_H
 # define QUEUE_H
 
-# include <stdlib.h>
-# include <stdio.h>
-
-/* queue */
-typedef struct s_node {
-    void *data;
-    struct s_node *next;
-} t_node;
-
 typedef struct s_queue {
     struct s_node *first;
     struct s_node *last;

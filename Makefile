@@ -1,20 +1,21 @@
-NAME    = visualizer
-CFLAGS  += -g -Wall -Werror -Wextra
-CFLAGS  += $(shell sdl2-config --cflags)
+NAME    = rubik
+CFLAGS  += -g -Wall -Werror -Wextra -I include
 LDFLAGS += $(shell sdl2-config --libs) -lm
 
-SRC = ht.c main.c queue.c solver.c
+SRC = $(addprefix src/, hashtable.c main.c queue.c solver.c stack.c utils.c)
 OBJ = $(SRC:.c=.o)
+
+src/main.o : CFLAGS += $(shell sdl2-config --cflags)
 
 UNAME	:= $(shell uname -s)
 
 ifeq ($(UNAME),Darwin)
-	CFLAGS += -Wno-deprecated-declarations
-	LDFLAGS += -framework OpenGL
+    src/main.o : CFLAGS += -Wno-deprecated-declarations
+    LDFLAGS += -framework OpenGL
 endif
 
 ifeq ($(UNAME),Linux)
-	LDFLAGS += -lGL -lGLU
+    LDFLAGS += -lGL -lGLU
 endif
 
 $(NAME): $(OBJ)

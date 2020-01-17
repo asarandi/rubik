@@ -1,7 +1,8 @@
 #ifndef HASHTABLE_H
 # define HASHTABLE_H
 
-# include "rubik.h"
+# include "common.h"
+# include "state.h"
 
 typedef struct s_hash_table {
     size_t capacity;
@@ -9,7 +10,7 @@ typedef struct s_hash_table {
     void **entries;
 } t_ht;
 
-t_state *ht_find(t_ht *ht, t_state *node);
+t_state *ht_find(t_ht *ht, t_state *cube);
 
 t_ht *ht_init();
 
