@@ -1,17 +1,10 @@
 #include "hashtable.h"
 #include "state.h"
 
-static int is_equal(t_state *a, t_state *b) {
-    return !memcmp(a->edges, b->edges, 40);
-}
-
 /* FNV-1a */
-static size_t hash(t_state *cube) {
-    void *data;
-    size_t i, hash, size;
+size_t fnv_hash(void *data, size_t size) {
+    size_t i, hash;
 
-    size = 40;
-    data = cube->edges;
     hash = 0xcbf29ce484222325L;
     for (i = 0; i < size; i++) {
         hash ^= *(unsigned char *) (data + i);
@@ -23,9 +16,9 @@ static size_t hash(t_state *cube) {
 static int __ht_insert(void **entries, size_t capacity, t_state *cube) {
     size_t i;
 
-    i = hash(cube) % capacity;
+    i = cube->hash % capacity;
     while (entries[i]) {
-        if (is_equal((t_state *) entries[i], cube))
+        if (((t_state *) entries[i])->hash == cube->hash)
             return 0;
         i = (i + 1) % capacity;
     }
@@ -54,6 +47,7 @@ static void ht_extend(t_ht *ht) {
 }
 
 void ht_insert(t_ht *ht, t_state *cube) {
+    cube->hash = ht->hash_f(cube);
     if (((ht->num_keys * 100) / ht->capacity) > 75)
         ht_extend(ht);
     if (__ht_insert(ht->entries, ht->capacity, cube))
@@ -61,18 +55,19 @@ void ht_insert(t_ht *ht, t_state *cube) {
 }
 
 t_state *ht_find(t_ht *ht, t_state *cube) {
-    size_t i;
+    size_t i, hash;
 
-    i = hash(cube) % ht->capacity;
+    hash = ht->hash_f(cube);
+    i = hash % ht->capacity;
     while (ht->entries[i]) {
-        if (is_equal((t_state *) ht->entries[i], cube))
+        if (((t_state *) (ht->entries[i]))->hash == hash)
             return (t_state *) ht->entries[i];
         i = (i + 1) % ht->capacity;
     }
     return NULL;
 }
 
-t_ht *ht_init() {
+t_ht *ht_init(size_t (*hash_f)()) {
     t_ht *ht;
 
     if (!(ht = calloc(1, sizeof(t_ht))))
@@ -80,6 +75,7 @@ t_ht *ht_init() {
     ht->capacity = 256;
     if (!(ht->entries = calloc(ht->capacity, sizeof(void *))))
         (void) fprintf(stderr, "%s: calloc() failed\n", __func__);
+    ht->hash_f = hash_f;
     return ht;
 }
 

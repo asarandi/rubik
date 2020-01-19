@@ -1,7 +1,10 @@
-#include "queue.h"
 #include "hashtable.h"
+#include "move.h"
+#include "queue.h"
+#include "stack.h"
 #include "utils.h"
 
+extern t_move moves[];
 int allowed_moves[][18] = {
 
 //   f,f',f2,  b,b',b2,  u,u',u2,  d,d',d2,  r,r',r2,  l,l',l2
@@ -69,24 +72,18 @@ void move_state(t_state *cube, int f, int move) {
     cube->move = (char) f * 3 + move;
 }
 
-int is_phase_one(t_state *cube) {
-    int i;
-
-    for (i = 0; i < 12; i++) {
-        if (cube->edge_orientations[i])
-            return 0;
-    }
-    return 1;
+size_t phase_one_hash(t_state *cube) {
+    return fnv_hash(cube->edge_orientations, 12);
 }
 
-int is_phase_two(t_state *cube) {
+size_t phase_two_hash(t_state *cube) {
     int i;
+    size_t hash;
 
-    for (i = 0; i < 8; i++) {
-        if (cube->corner_orientations[i])
-            return 0;
-    }
-    return 1;
+    hash = fnv_hash(cube->corner_orientations, 8);
+    for (i = 0; i < 12; i++)
+        hash ^= (cube->edge_orientations[i] > 7) << i;
+    return hash;
 }
 
 int is_solved(t_state *cube) {
@@ -111,44 +108,102 @@ t_state *clone(t_state *src) {
     return memcpy(calloc(1, sizeof(*src)), src, sizeof(*src));
 }
 
-void solve(t_state *root) {
-    t_state *node, *child;
+t_state *solved_state() {
+    int i;
+    t_state *res;
+
+    if (!(res = calloc(1, sizeof(*res))))
+        return NULL;
+    for (i = 0; i < 12; i++) {
+        res->edges[i] = (char) i;
+        res->edge_orientations[i] = 0;
+        if (i > 7)
+            continue;
+        res->corners[i] = (char) i;
+        res->corner_orientations[i] = 0;
+    }
+    return res;
+}
+
+
+t_state *bfs(t_state *root, const int *possible_moves, size_t (*hf)(), t_queue *steps) {
+    t_state *node, *child, *solved, *ptr = NULL, *res = NULL;
     t_queue *q;
+    t_stack *s = NULL;
     t_ht *ht;
     int i;
 
     q = queue_init();
-    ht = ht_init();
+    ht = ht_init(hf);
     node = clone(root);
     node->parent = NULL;
+    node->direction = 0;
+    node->move = -1;
+    solved = solved_state();
+    solved->direction = 1;
+    solved->parent = NULL;
+    solved->move = -1;
     queue_enqueue(q, node);
-    ht_insert(ht, node);
+    queue_enqueue(q, solved);
     while (!queue_is_empty(q)) {
         node = queue_dequeue(q);
-        if (is_phase_one(node)) {
-            printf("found!\n");
-            while (node) {
-                print_cube(node);
-                printf("\n");
-                node = node->parent;
+        if ((ptr = ht_find(ht, node))) {
+            if (ptr->direction != node->direction) {
+                if (node->direction)
+                    res = node, node = ptr, ptr = res;
+                s = stack_init();
+                while (node->parent) {
+                    stack_push(s, (void *) (intptr_t) node->move);
+                    node = node->parent;
+                }
+                break;
             }
-            break;
+            free(node);
+            continue;
+        } else {
+            ht_insert(ht, node);
         }
         for (i = 0; i < 18; i++) {
-            if (!allowed_moves[0][i])
+            if (!possible_moves[i])
                 continue;
             child = clone(node);
             child->parent = node;
             child->move = (char) i;
+            child->direction = node->direction;
             move_state(child, i / 3, i % 3);
-            if (ht_find(ht, child)) {
-                free(child);
-                continue;
-            }
-            ht_insert(ht, child);
             queue_enqueue(q, child);
         }
     }
+    printf("steps: ");
+    while (!stack_is_empty(s)) {
+        i = (intptr_t) stack_pop(s);
+        queue_enqueue(steps, (void *) (intptr_t) i);
+        printf("%s ", moves[i].str);
+    }
+    while (ptr) {
+        queue_enqueue(steps, (void *) (intptr_t) ptr->move);    //INVERSE
+        printf("%s ", moves[(int) ptr->move].str);
+        if (!ptr->parent)
+            res = clone(ptr);
+        ptr = ptr->parent;
+    }
+    printf("\n");
+    if (s)
+        stack_destroy(s);
     queue_destroy(q);
     ht_destroy_all(ht);
+    return res;
+}
+
+void solve(t_state *cube) {
+    t_state *phase_one, *phase_two;
+    t_queue *steps;
+
+    steps = queue_init();
+    phase_one = bfs(cube, allowed_moves[0], &phase_one_hash, steps);
+    phase_two = bfs(phase_one, allowed_moves[1], &phase_two_hash, steps);
+
+    print_cube(phase_two);
+    free(phase_two);
+    free(phase_one);
 }
