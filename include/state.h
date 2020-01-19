@@ -4,6 +4,7 @@
 typedef struct s_state {
     size_t hash;
     struct s_state *parent;
+    char depth;
     char direction;
     char move;
     char edges[12];

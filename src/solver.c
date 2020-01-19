@@ -11,7 +11,7 @@ int allowed_moves[][18] = {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},    //all moves
         {0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},    //all except F,F',B,B'
         {0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1},    //all except F,F',B,B',R,R',L,L'
-        {0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1},    //only F2,B2,U2,D2,R2,L2
+        {0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1},    //only F2,B2,U2,D2,R2,L2 moves
 };
 
 /*
@@ -73,12 +73,7 @@ void move_state(t_state *cube, int f, int move) {
 }
 
 size_t phase_one_hash(t_state *cube) {
-    size_t i, hash;
-
-    hash = fnv_hash(cube->edge_orientations, 12);
-    for (i = 0; i < 12; i++)
-        hash ^= cube->edge_orientations[i] << i;
-    return hash;
+    return fnv_hash(cube->edge_orientations, 12);
 }
 
 size_t phase_two_hash(t_state *cube) {
@@ -86,10 +81,30 @@ size_t phase_two_hash(t_state *cube) {
     size_t hash;
 
     hash = fnv_hash(cube->corner_orientations, 8);
+    //for (i=hash=0; i<8; i++)
+//        hash = (hash << 3) | cube->corner_orientations[i];
+
     for (i = 0; i < 12; i++)
-        hash ^= (cube->edge_orientations[i] > 7) << i;
+        hash = (hash << 1) | (cube->edges[i] > 7);
     return hash;
 }
+
+size_t phase_three_hash(t_state *cube) {
+    int i, j;
+    size_t hash;
+
+    for (i = 0; i < 12; i++)
+        hash = (hash << 2) | (cube->edge_orientations[i] < 8 ? cube->edge_orientations[i] & 1 : 2);
+    for (i = hash = 0; i < 8; i++)
+        hash = (hash << 3) | (cube->corners[i] & 5);
+    for (hash <<= 1, i = 0; i < 8; i++) {
+        for (j = i + 1; j < 8; j++)
+            hash ^= cube->corners[i] > cube->corners[j];
+        hash <<= 1;
+    }
+    return hash;
+}
+
 
 int is_solved(t_state *cube) {
     int i;
@@ -132,36 +147,51 @@ t_state *solved_state() {
 
 size_t cube_hash(t_state *cube) {
     return fnv_hash(cube->edges, 40);
+//    size_t a, b, c, d;
+//    a = fnv_hash(cube->edges, 12);
+//    b = fnv_hash(cube->edge_orientations, 12);
+//    c = fnv_hash(cube->corners, 8);
+//    d = fnv_hash(cube->corner_orientations, 8);
+//    return a ^ b ^ c ^ d;
 }
 
 void bfs(t_state *root, const int *possible_moves, size_t (*hf)(), t_queue *steps) {
     t_state *node, *child, *solved, *ptr = NULL, *res = NULL;
     t_queue *q;
     t_stack *s = NULL;
-    t_ht *all, *config;
-    int i;
+    t_ht *config;
+    int i, max_depth;
 
     q = queue_init();
     config = ht_init(hf);
-    all = ht_init(cube_hash);
+  //  all = ht_init(cube_hash);
 
     node = clone(root);
     node->parent = NULL;
     node->direction = 0;
     node->move = -1;
+    node->depth = 0;
 
     solved = solved_state();
     solved->direction = 1;
     solved->parent = NULL;
     solved->move = -1;
+    solved->depth = 0;
 
     queue_enqueue(q, node);
     queue_enqueue(q, solved);
-    ht_insert(all, node);
-    ht_insert(all, solved);
+//    ht_insert(all, node);
+  //  ht_insert(all, solved);
+
+    max_depth = 0;
 
     while (!queue_is_empty(q)) {
         node = queue_dequeue(q);
+        if (node->depth > max_depth)
+        {
+            max_depth = node->depth;
+            printf("new depth = %d, num nodes = %lu\n", max_depth, config->num_keys);
+        }
         if ((ptr = ht_find(config, node))) {
             if (ptr->direction != node->direction) {
                 if (node->direction)
@@ -182,9 +212,10 @@ void bfs(t_state *root, const int *possible_moves, size_t (*hf)(), t_queue *step
             child->parent = node;
             child->move = (char) i;
             child->direction = node->direction;
+            child->depth = node->depth + 1;
             move_state(child, i / 3, i % 3);
             queue_enqueue(q, child);
-            ht_insert(all, child);
+//            ht_insert(all, child);
         }
     }
     printf("steps: ");
@@ -207,8 +238,8 @@ void bfs(t_state *root, const int *possible_moves, size_t (*hf)(), t_queue *step
     if (s)
         stack_destroy(s);
     queue_destroy(q);
-    ht_destroy(config);
-    ht_destroy_all(all);
+    ht_destroy_all(config);
+    //ht_destroy_all(all);
 }
 
 void solve(t_state *input) {
@@ -227,6 +258,14 @@ void solve(t_state *input) {
 
     bfs(root, allowed_moves[1], &phase_two_hash, steps);
     printf("after phase two\n");
+    print_cube(root);
+
+    bfs(root, allowed_moves[2], &phase_three_hash, steps);
+    printf("after phase three\n");
+    print_cube(root);
+
+    bfs(root, allowed_moves[3], &cube_hash, steps);
+    printf("after phase four\n");
     print_cube(root);
 
     free(root);
