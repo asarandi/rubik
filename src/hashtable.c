@@ -79,13 +79,21 @@ t_ht *ht_init(size_t (*hash_f)()) {
     return ht;
 }
 
-void ht_destroy_all(t_ht *ht) {
+static void __ht_destroy(t_ht *ht, int f) {
     size_t i;
 
-    for (i = 0; i < ht->capacity; i++) {
+    for (i = 0; f && i < ht->capacity; i++) {
         if (ht->entries[i])
-            free(ht->entries[i]);   /* XXX */
+            free(ht->entries[i]);
     }
     free(ht->entries);
     free(ht);
+}
+
+void ht_destroy_all(t_ht *ht) {
+    return __ht_destroy(ht, 1);
+}
+
+void ht_destroy(t_ht *ht) {
+    return __ht_destroy(ht, 0);
 }

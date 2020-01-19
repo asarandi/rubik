@@ -22,4 +22,6 @@ void ht_insert(t_ht *ht, t_state *cube);
 
 void ht_destroy_all(t_ht *ht);
 
+void ht_destroy(t_ht *ht);
+
 #endif
