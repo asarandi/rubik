@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "hashtable.h"
 #include "move.h"
 #include "queue.h"
@@ -184,6 +185,7 @@ void bfs(t_state *root, const int *possible_moves, size_t (*hf)(), t_queue *step
   //  ht_insert(all, solved);
 
     max_depth = 0;
+    printf("\n");
 
     while (!queue_is_empty(q)) {
         node = queue_dequeue(q);

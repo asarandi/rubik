@@ -265,7 +265,7 @@ void process_moves() {
     if (i == -1) {
         if (queue_is_empty(q))
             return;
-        i = (intptr_t) (int) queue_dequeue(q);
+        i = (intptr_t) queue_dequeue(q);
         move_started_time = get_time_stamp();
         memcpy(cube_array_copy, cube_array, sizeof(cube_array));
         return;
