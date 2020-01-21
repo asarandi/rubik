@@ -1,5 +1,5 @@
 NAME    = rubik
-CFLAGS  += -g -Wall -Werror -Wextra -I include
+CFLAGS  += -O1 -Wall -Werror -Wextra -I include
 LDFLAGS += $(shell sdl2-config --libs) -lm
 
 SRC = $(addprefix src/, hashtable.c main.c queue.c solver.c stack.c utils.c)
