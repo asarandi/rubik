@@ -20,11 +20,14 @@
 
 # define SCREEN_WIDTH  640
 # define SCREEN_HEIGHT 480
-# define CUBE_INNER_COLOR 0.08f, 0.08f, 0.08f
-# define MOVE_DURATION 500000    /* half second */
-# define ABS(i) ((i) < 0 ? -(i) : (i))
+# define BACKGROUND_COLOR 0.3f, 0.3f, 0.3f, 0.0f
+# define CUBE_INNER_COLOR 0.08f, 0.08f, 0.08f, 1.0f
+# define CUBE_LINE_WIDTH 2.0f
+# define DISTANCE_FROM_SCREEN -18.0f
+# define MOVE_DURATION 200000    /* half second */
 # define PERSPECTIVE_UNIT 5.625f
 # define ONE_DEGREE -0.0174533f
+# define ABS(i) ((i) < 0 ? -(i) : (i))
 
 SDL_GLContext *context;
 SDL_Window *window;
@@ -73,17 +76,7 @@ int faces_array[6][9] = {
         {8,  7,  6,  5,  4,  3,  2,  1,  0}   // 5 L orange
 };
 
-t_state cube_state = {
-        0,
-        NULL,
-        0,
-        0,
-        0,
-        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 1, 2, 3, 4, 5, 6, 7},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-};
+t_state *cube_state;
 
 int faces_array_copy[6][9];
 
@@ -278,9 +271,8 @@ void process_moves() {
         memcpy(cube_array, cube_array_copy, sizeof(cube_array));
         rotate_face_floats(i / 3, (float) d * 90 * ONE_DEGREE);
         rotate_face_ints(i / 3, i % 3);
-        move_state(&cube_state, i / 3, i % 3);
+        move_state(cube_state, i / 3, i % 3);
         update_neighbors(i / 3);
-        //printf("%s\n", moves[i].str);
         i = -1;
         return;
     }
@@ -295,12 +287,12 @@ int draw_gl_scene() {
     int t[8] = {0, 1, 2, 3, 0, 3, 1, 2};
     int i, j, k;
 
-    glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
+    glClearColor(BACKGROUND_COLOR);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glLoadIdentity();
-    glTranslatef(0.0f, 0.0f, -18.0f);
+    glTranslatef(0.0f, 0.0f, DISTANCE_FROM_SCREEN);
     glRotatef(perspective_x, 1.0f, 0.0f, 0.0f);
     glRotatef(perspective_y, 0.0f, 1.0f, 0.0f);
     glBegin(GL_QUADS);
@@ -309,16 +301,16 @@ int draw_gl_scene() {
             if (color_enabled_table[i][j])
                 glColor4f(cube_colors[j][0], cube_colors[j][1], cube_colors[j][2], 1.0f);
             else
-                glColor4f(CUBE_INNER_COLOR, 1.0f);
+                glColor4f(CUBE_INNER_COLOR);
 
             for (k = 0; k < 4; k++)
                 glVertex3f(cube_array[i][j][k][0], cube_array[i][j][k][1], cube_array[i][j][k][2]);
         }
     }
     glEnd();
-    glLineWidth(10.0f);
+    glLineWidth(CUBE_LINE_WIDTH);
     glBegin(GL_LINES);
-    glColor4f(CUBE_INNER_COLOR, 0.2f);
+    glColor4f(CUBE_INNER_COLOR);
     for (i = 0; i < 27; i++) {
         for (j = 0; j < 8; j++)
             glVertex3f(cube_array[i][0][t[j]][0], cube_array[i][0][t[j]][1], cube_array[i][0][t[j]][2]);
@@ -335,6 +327,7 @@ int draw_gl_scene() {
 }
 
 void quit(int exit_code) {
+    free(cube_state);
     queue_destroy(q);
     if (context)
         SDL_GL_DeleteContext(context);
@@ -360,10 +353,10 @@ void handle_key_press(SDL_Keysym *keysym) {
 
     switch (keysym->sym) {
         case SDLK_p:
-            print_cube(&cube_state);
+            print_cube(cube_state);
             break;
         case SDLK_s:
-            solve(&cube_state);
+            solve(cube_state);
             break;
         case SDLK_ESCAPE:
             quit(0);
@@ -451,6 +444,7 @@ int main(int ac, char **av) {
     init_gl();
     init_cubes();
     memcpy(faces_array_copy, faces_array, sizeof(faces_array));
+    cube_state = solved_state();
     q = queue_init();
     read_input(ac, av);
 

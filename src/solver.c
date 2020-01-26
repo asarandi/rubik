@@ -92,18 +92,21 @@ size_t phase_two_hash(t_state *cube) {
 }
 
 size_t phase_three_hash(t_state *cube) {
-    int i, j;
+    int i, j, f[4], s[4];
     size_t hash;
 
     for (i = hash = 0; i < 12; i++)
         hash = (hash << 2) | (cube->edges[i] > 7 ? 2 : cube->edges[i] & 1);
     for (i = 0; i < 8; i++)
         hash = (hash << 3) | (cube->corners[i] & 5);
-    for (hash <<= 1, i = 0; i < 7; i++) {
-//        hash <<= 1;
-        for (j = i + 1; j < 8; j++)
-            hash ^= cube->corners[i] > cube->corners[j];
+    for (i = j = 0; i < 8; i++) {
+        if (cube->corners[i] < 4)
+            f[cube->corners[i] & 3] = j++;
+        else
+            s[i - j] = cube->corners[i] & 3;
     }
+    hash <<= 3;
+    hash |= (((f[s[0]] ^ f[s[1]]) << 1) | ((f[s[0]] ^ f[s[2]]) > (f[s[0]] ^ f[s[3]])));
     return hash;
 }
 
