@@ -2,3 +2,7 @@ a.out
 *.o
 visualizer
 rubik
+solver
+go-rubik/go-rubik
+CMakeLists.txt
+notes.txt

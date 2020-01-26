@@ -2,10 +2,7 @@ package main
 
 import (
 	"container/list"
-	"sync"
 )
-
-var wg sync.WaitGroup
 
 type cubeState struct {
 	edges              [12]int
