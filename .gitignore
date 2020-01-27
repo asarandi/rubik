@@ -6,3 +6,4 @@ solver
 go-rubik/go-rubik
 CMakeLists.txt
 notes.txt
+.idea
