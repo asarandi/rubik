@@ -81,12 +81,9 @@ func phaseThreeHash(c cubeState) int64 {
 			res |= int64(c.edges[i] & 1)
 		}
 	}
-	for i = 0; i < 8; i++ {
+	for i, j = 0, 0; i < 8; i++ {
 		res <<= 3
 		res |= int64(c.corners[i] & 5)
-	}
-
-	for i, j = 0, 0; i < 8; i++ {
 		if c.corners[i] < 4 {
 			f[c.corners[i]&3] = j
 			j += 1
