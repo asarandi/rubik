@@ -122,7 +122,7 @@ func phaseFourHash(c cubeState) int64 {
 	return int64(res)
 }
 
-func (c *cubeState) move(idx int) {
+func moveState(c *cubeState, idx int) {
 	var (
 		rotations = [3][4]int{
 			{1, 2, 3, 0}, // clockwise rotation: 0, 1, 2, 3 => 1, 2, 3, 0
@@ -210,7 +210,7 @@ func bfs(start cubeState, hf func(c cubeState) int64, moves []int) *list.List {
 				continue
 			}
 			child = node
-			child.move(i)
+			moveState(&child, i)
 			hashChild = hf(child)
 			if dirChild, ok = direction[hashChild]; ok && dirChild != dirNode {
 				if dirNode == 1 {
@@ -327,7 +327,7 @@ func solve(c cubeState) *list.List {
 		for steps.Len() > 0 {
 			move := steps.Remove(steps.Front()).(int)
 			solution.PushBack(move)
-			clone.move(move)
+			moveState(&clone, move)
 			numSteps += 1
 			if printPhaseMoves {
 				fmt.Printf("%s ", moveNames[move])
@@ -338,7 +338,7 @@ func solve(c cubeState) *list.List {
 		}
 	}
 	t = time.Now().UnixNano() - t
-	if printPhaseMoves && solution.Len() > 0 {
+	if printPhaseMoves && numSteps > 0 {
 		fmt.Printf("%*s:\t %.4f second(s)\n", pfLeft, "search duration", float64(t)/1000000000.0)
 		fmt.Printf("%*s:\t %d moves\n\n", pfLeft, "solution length", numSteps)
 	}

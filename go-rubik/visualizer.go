@@ -268,7 +268,7 @@ func processMoves() {
 	if t >= moveStartedTime+moveDuration {
 		rotateFaceFloats(moveIndex/3, d*90.0*oneDegree)
 		updateFacesArray(moveIndex)
-		cube.move(moveIndex)
+		moveState(&cube, moveIndex)
 		moveIndex = -1
 		return
 	}
