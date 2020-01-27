@@ -2,8 +2,6 @@ package main
 
 import (
 	"container/list"
-	"fmt"
-	_ "fmt"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/veandco/go-sdl2/sdl"
 	"math"
@@ -318,18 +316,16 @@ func handleKeyPress(t *sdl.KeyboardEvent) {
 		perspectiveX += perspectiveUnit
 	case sdl.K_DOWN:
 		perspectiveX -= perspectiveUnit
+	case sdl.K_p:
+		printCubeConfig(cube)
 	case sdl.K_s:
-		if t.Repeat != 0 || queue.Len() != 0 {
-			break
+		if t.Repeat == 0 && queue.Len() == 0 && moveIndex == -1 {
+			solution = solve(cube)
+			for solution.Len() > 0 {
+				move = solution.Remove(solution.Front()).(int)
+				queue.PushBack(move)
+			}
 		}
-		solution = cube.solve()
-		fmt.Printf("steps:  ")
-		for solution.Len() > 0 {
-			move = solution.Remove(solution.Front()).(int)
-			queue.PushBack(move)
-			fmt.Printf("%s ", moveNames[move])
-		}
-		fmt.Printf("\n")
 	}
 }
 
