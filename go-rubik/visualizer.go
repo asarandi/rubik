@@ -4,6 +4,9 @@ import (
 	"container/list"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/veandco/go-sdl2/sdl"
+	"image"
+	"image/draw"
+	_ "image/png"
 	"math"
 	"os"
 	"strings"
@@ -12,10 +15,14 @@ import (
 
 const (
 	winTitle            = "go-rubik"
-	winWidth, winHeight = 640, 480
+	winWidth, winHeight = 1024, 768
 	moveDuration        = 250000000
 	oneDegree           = -0.0174533
 	perspectiveUnit     = 5.625
+	spinX               = 0.15
+	spinY               = 0.1
+	spinZ               = 0.2
+	numTextures         = 7
 )
 
 type (
@@ -30,12 +37,17 @@ var (
 	cube                     cubeState
 	queue                    *list.List
 	cubeArray, cubeArrayCopy []tCube
+	texture                  uint32
 
 	moveIndex       = -1
 	moveStartedTime int64
 	running         bool
+	showTexture     bool    = true
+	spinning        bool    = false
 	perspectiveX    float32 = 35.264
 	perspectiveY    float32 = -45.0
+	perspectiveZ    float32 = 0
+	textures        [numTextures]uint32
 
 	cubeColors = [6][3]float32{
 		{0.00, 0.61, 0.28}, //F - green
@@ -47,13 +59,26 @@ var (
 	}
 
 	facesArray = [6][9]int{
-		{6, 15, 24, 3, 12, 21, 0, 9, 18},     // 0 F green
-		{26, 17, 8, 23, 14, 5, 20, 11, 2},    // 1 B blue
-		{8, 17, 26, 7, 16, 25, 6, 15, 24},    // 2 U white
-		{0, 9, 18, 1, 10, 19, 2, 11, 20},     // 3 D yellow
-		{24, 25, 26, 21, 22, 23, 18, 19, 20}, // 4 R red
-		{8, 7, 6, 5, 4, 3, 2, 1, 0},          // 5 L orange
+		{8, 17, 26, 5, 14, 23, 2, 11, 20},
+		{24, 15, 6, 21, 12, 3, 18, 9, 0}, //B
+		//{18,  9,  0, 21, 12,  3, 24, 15,  6},		//B
+
+		{6, 15, 24, 7, 16, 25, 8, 17, 26},
+		{18, 9, 0, 19, 10, 1, 20, 11, 2}, //D
+		//{20, 11, 2, 19, 10, 1, 18, 9, 0}, 		//D
+
+		{26, 25, 24, 23, 22, 21, 20, 19, 18},
+		{6, 7, 8, 3, 4, 5, 0, 1, 2}, //L
+		//{0, 1, 2, 3, 4, 5, 6, 7, 8},			//L
 	}
+	//facesArray = [6][9]int{
+	//	{26, 17, 8, 23, 14, 5, 20, 11, 2},    // 1 B blue
+	//	{6, 15, 24, 3, 12, 21, 0, 9, 18},     // 0 F green
+	//	{8, 17, 26, 7, 16, 25, 6, 15, 24},    // 2 U white
+	//	{0, 9, 18, 1, 10, 19, 2, 11, 20},     // 3 D yellow
+	//	{24, 25, 26, 21, 22, 23, 18, 19, 20}, // 4 R red
+	//	{8, 7, 6, 5, 4, 3, 2, 1, 0},          // 5 L orange
+	//}
 	facesArrayCopy = facesArray
 )
 
@@ -135,25 +160,34 @@ func updateFacesArray(move int) {
 
 func initCube(t *tCube, x, y, z float64) {
 	var coords = [6][4][3]float64{
-		{{0, 0, 0}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0},},
-		{{0, 0, -1}, {0, 1, -1}, {1, 1, -1}, {1, 0, -1},},
-		{{0, 1, 0}, {0, 1, -1}, {1, 1, -1}, {1, 1, 0},},
-		{{0, 0, 0}, {0, 0, -1}, {1, 0, -1}, {1, 0, 0},},
-		{{1, 0, 0}, {1, 1, 0}, {1, 1, -1}, {1, 0, -1},},
-		{{0, 0, 0}, {0, 1, 0}, {0, 1, -1}, {0, 0, -1},},
+
+		{{0, 0, 1}, {0, 1, 1}, {1, 1, 1}, {1, 0, 1}}, // F  ... z axis
+		//		{{0, 0, 0}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0}}, // F  ... z axis
+		{{1, 1, 0}, {1, 0, 0}, {0, 0, 0}, {0, 1, 0}}, // B
+
+		{{0, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 1, 1}}, // U ... y axis
+		//		{{0, 0, 1}, {0, 0, 0}, {1, 0, 0}, {1, 0, 1}}, // U ... y axis
+		{{1, 0, 0}, {1, 0, 1}, {0, 0, 1}, {0, 0, 0}}, // D
+
+		{{1, 0, 1}, {1, 1, 1}, {1, 1, 0}, {1, 0, 0}}, // R .. x axis
+		//		{{0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {0, 0, 0}}, // R .. x axis
+		{{0, 1, 0}, {0, 0, 0}, {0, 0, 1}, {0, 1, 1}}, // L
+
 	}
-	var have = [6]float64{z, z, y, y, x, x}
-	var want = [6]float64{3, -1, 1, -3, 1, -3}
+	var have = [6]int{2, 2, 1, 1, 0, 0}
+	var want = [6]float64{3, -3, 3, -3, 3, -3}
 	var f = [3]float64{x, y, z}
 	var i, j, k int
 
 	for i = 0; i < 6; i++ {
-		t[i].v = want[i] == have[i]
+		visible := true
 		for j = 0; j < 4; j++ {
 			for k = 0; k < 3; k++ {
 				t[i].c[j][k] = f[k] + coords[i][j][k]*2.0
 			}
+			visible = visible && t[i].c[j][have[i]] == want[i]
 		}
+		t[i].v = visible
 	}
 }
 
@@ -163,7 +197,7 @@ func initAllCubes() {
 	cubeArray, cubeArrayCopy = make([]tCube, 27), make([]tCube, 27)
 	for i = -3; i < 3; i += 2 {
 		for j = -3; j < 3; j += 2 {
-			for k = 3; k > -3; k -= 2 {
+			for k = -3; k < 3; k += 2 {
 				initCube(&cubeArray[idx], float64(i), float64(j), float64(k))
 				idx += 1
 			}
@@ -172,43 +206,143 @@ func initAllCubes() {
 	copy(cubeArrayCopy, cubeArray)
 }
 
+func prepTextures() {
+	//var files = []string{"data/nums.png", "data/nums.png", "data/nums.png", "data/nums.png", "data/nums.png", "data/nums.png", "data/black.png"}
+	var files = []string{"data/front.png", "data/back.png", "data/up.png", "data/down.png", "data/right.png", "data/left.png", "data/black.png"}
+	var i int32
+
+	gl.Enable(gl.TEXTURE_2D)
+	gl.GenTextures(numTextures, &textures[0])
+	for i = 0; i < numTextures; i++ {
+		rd, err := os.Open(files[i])
+		if err != nil {
+			panic(err)
+		}
+		img, _, err := image.Decode(rd)
+		if err != nil {
+			panic(err)
+		}
+		rgba := image.NewRGBA(img.Bounds())
+		if rgba.Stride != rgba.Rect.Size().X*4 {
+			panic("unsupported stride")
+		}
+		draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+
+		gl.BindTexture(gl.TEXTURE_2D, textures[i])
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+
+		gl.TexImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.RGBA,
+			int32(rgba.Rect.Size().X),
+			int32(rgba.Rect.Size().Y),
+			0,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			gl.Ptr(rgba.Pix))
+
+	}
+}
+
 func drawGlScene() {
 	var t = [8]int{0, 1, 2, 3, 0, 3, 1, 2}
-	var i, j, k int
+	var u float64 = 1.0 / 3.0
+	var subs = [9][4][]float64{
+		{{u * 0, u * 1}, {u * 0, u * 0}, {u * 1, u * 0}, {u * 1, u * 1}},
+		{{u * 1, u * 1}, {u * 1, u * 0}, {u * 2, u * 0}, {u * 2, u * 1}},
+		{{u * 2, u * 1}, {u * 2, u * 0}, {u * 3, u * 0}, {u * 3, u * 1}},
+
+		{{u * 0, u * 2}, {u * 0, u * 1}, {u * 1, u * 1}, {u * 1, u * 2}},
+		{{u * 1, u * 2}, {u * 1, u * 1}, {u * 2, u * 1}, {u * 2, u * 2}},
+		{{u * 2, u * 2}, {u * 2, u * 1}, {u * 3, u * 1}, {u * 3, u * 2}},
+
+		{{u * 0, u * 3}, {u * 0, u * 2}, {u * 1, u * 2}, {u * 1, u * 3}},
+		{{u * 1, u * 3}, {u * 1, u * 2}, {u * 2, u * 2}, {u * 2, u * 3}},
+		{{u * 2, u * 3}, {u * 2, u * 2}, {u * 3, u * 2}, {u * 3, u * 3}},
+	}
+
+	var faceTextures = [6][9]int{
+		{8, 17, 26, 5, 14, 23, 2, 11, 20},
+		{18, 9, 0, 21, 12, 3, 24, 15, 6},
+		{6, 15, 24, 7, 16, 25, 8, 17, 26},
+		{20, 11, 2, 19, 10, 1, 18, 9, 0},
+		{26, 25, 24, 23, 22, 21, 20, 19, 18},
+		{0, 1, 2, 3, 4, 5, 6, 7, 8},
+	}
+
+	var i, j, subIndex, k int
 
 	gl.ClearColor(0.3, 0.3, 0.3, 0.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	gl.LoadIdentity()
 	gl.Translatef(0.0, 0.0, -18.0)
+
+	if spinning {
+		perspectiveX += spinX
+		perspectiveY += spinY
+		perspectiveZ += spinZ
+	}
+
 	gl.Rotatef(perspectiveX, 1.0, 0.0, 0.0)
 	gl.Rotatef(perspectiveY, 0.0, 1.0, 0.0)
-	gl.Begin(gl.QUADS)
+	gl.Rotatef(perspectiveZ, 0.0, 0.0, 1.0)
+
+	if showTexture {
+		gl.Color4f(1, 1, 1, 1)
+	}
+
 	for i = 0; i < 27; i++ {
 		for j = 0; j < 6; j++ {
-			if cubeArray[i][j].v {
-				gl.Color4f(cubeColors[j][0], cubeColors[j][1], cubeColors[j][2], 1.0)
-			} else {
-				gl.Color4f(0.08, 0.08, 0.08, 1.0)
+			for subIndex = 0; subIndex < 9; subIndex++ {
+				if faceTextures[j][subIndex] == i {
+					break
+				}
 			}
+			if subIndex == 9 {
+				subIndex = 0
+			}
+			if showTexture {
+				if cubeArray[i][j].v {
+					gl.BindTexture(gl.TEXTURE_2D, textures[j])
+				} else {
+					gl.BindTexture(gl.TEXTURE_2D, textures[6]) /* black */
+				}
+			}
+			gl.Begin(gl.QUADS)
 			for k = 0; k < 4; k++ {
-				gl.Vertex3d(cubeArray[i][j].c[k][0], cubeArray[i][j].c[k][1], cubeArray[i][j].c[k][2])
+				if showTexture {
+					gl.TexCoord2dv(&subs[subIndex][k][0])
+				} else {
+					if cubeArray[i][j].v {
+						gl.Color4f(cubeColors[j][0], cubeColors[j][1], cubeColors[j][2], 1.0)
+					} else {
+						gl.Color4f(0.08, 0.08, 0.08, 1.0)
+					}
+				}
+				gl.Vertex3dv(&cubeArray[i][j].c[k][0])
 			}
+			gl.End()
+
 		}
 	}
-	gl.End()
+
 	gl.LineWidth(4.0)
 	gl.Begin(gl.LINES)
-	gl.Color4f(0.08, 0.08, 0.08, 0.5)
+	gl.Color4f(1.00, 0.08, 0.08, 1.0)
 	for i = 0; i < 27; i++ {
 		for j = 0; j < 8; j++ {
-			gl.Vertex3d(cubeArray[i][0].c[t[j]][0], cubeArray[i][0].c[t[j]][1], cubeArray[i][0].c[t[j]][2])
+			gl.Vertex3dv(&cubeArray[i][0].c[t[j]][0])
 		}
 		for j = 0; j < 8; j++ {
-			gl.Vertex3d(cubeArray[i][1].c[t[j]][0], cubeArray[i][1].c[t[j]][1], cubeArray[i][1].c[t[j]][2])
+			gl.Vertex3dv(&cubeArray[i][1].c[t[j]][0])
 		}
 		for j = 0; j < 4; j++ {
-			gl.Vertex3d(cubeArray[i][0].c[j][0], cubeArray[i][0].c[j][1], cubeArray[i][0].c[j][2])
-			gl.Vertex3d(cubeArray[i][1].c[j][0], cubeArray[i][1].c[j][1], cubeArray[i][1].c[j][2])
+			gl.Vertex3dv(&cubeArray[i][0].c[j][0])
+			gl.Vertex3dv(&cubeArray[i][1].c[j][0])
 		}
 	}
 	gl.End()
@@ -316,6 +450,8 @@ func handleKeyPress(t *sdl.KeyboardEvent) {
 		perspectiveX += perspectiveUnit
 	case sdl.K_DOWN:
 		perspectiveX -= perspectiveUnit
+	case sdl.K_z:
+		spinning = spinning != true
 	case sdl.K_p:
 		printCubeConfig(cube)
 	case sdl.K_s:
@@ -355,6 +491,9 @@ func main() {
 	if err = gl.Init(); err != nil {
 		panic(err)
 	}
+
+	prepTextures()
+	defer gl.DeleteTextures(54, &textures[0])
 
 	initGl()
 	initAllCubes()

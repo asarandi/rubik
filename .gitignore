@@ -7,3 +7,11 @@ go-rubik/go-rubik
 CMakeLists.txt
 notes.txt
 .idea
+.DS_Store
+._*
+go-rubik/data
+go-rubik/fish
+go-rubik/photo
+*.jpg
+*.jpeg
+*.png
