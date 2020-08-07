@@ -2,6 +2,7 @@ package main
 
 import (
 	"container/list"
+	_ "fmt"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/veandco/go-sdl2/sdl"
 	"image"
@@ -59,26 +60,13 @@ var (
 	}
 
 	facesArray = [6][9]int{
-		{8, 17, 26, 5, 14, 23, 2, 11, 20},
-		{24, 15, 6, 21, 12, 3, 18, 9, 0}, //B
-		//{18,  9,  0, 21, 12,  3, 24, 15,  6},		//B
-
-		{6, 15, 24, 7, 16, 25, 8, 17, 26},
-		{18, 9, 0, 19, 10, 1, 20, 11, 2}, //D
-		//{20, 11, 2, 19, 10, 1, 18, 9, 0}, 		//D
-
-		{26, 25, 24, 23, 22, 21, 20, 19, 18},
-		{6, 7, 8, 3, 4, 5, 0, 1, 2}, //L
-		//{0, 1, 2, 3, 4, 5, 6, 7, 8},			//L
+		{8, 17, 26, 5, 14, 23, 2, 11, 20},    //F
+		{24, 15, 6, 21, 12, 3, 18, 9, 0},     //B
+		{6, 15, 24, 7, 16, 25, 8, 17, 26},    //U
+		{18, 9, 0, 19, 10, 1, 20, 11, 2},     //D
+		{26, 25, 24, 23, 22, 21, 20, 19, 18}, //R
+		{6, 7, 8, 3, 4, 5, 0, 1, 2},          //L
 	}
-	//facesArray = [6][9]int{
-	//	{26, 17, 8, 23, 14, 5, 20, 11, 2},    // 1 B blue
-	//	{6, 15, 24, 3, 12, 21, 0, 9, 18},     // 0 F green
-	//	{8, 17, 26, 7, 16, 25, 6, 15, 24},    // 2 U white
-	//	{0, 9, 18, 1, 10, 19, 2, 11, 20},     // 3 D yellow
-	//	{24, 25, 26, 21, 22, 23, 18, 19, 20}, // 4 R red
-	//	{8, 7, 6, 5, 4, 3, 2, 1, 0},          // 5 L orange
-	//}
 	facesArrayCopy = facesArray
 )
 
@@ -160,19 +148,12 @@ func updateFacesArray(move int) {
 
 func initCube(t *tCube, x, y, z float64) {
 	var coords = [6][4][3]float64{
-
 		{{0, 0, 1}, {0, 1, 1}, {1, 1, 1}, {1, 0, 1}}, // F  ... z axis
-		//		{{0, 0, 0}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0}}, // F  ... z axis
 		{{1, 1, 0}, {1, 0, 0}, {0, 0, 0}, {0, 1, 0}}, // B
-
 		{{0, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 1, 1}}, // U ... y axis
-		//		{{0, 0, 1}, {0, 0, 0}, {1, 0, 0}, {1, 0, 1}}, // U ... y axis
 		{{1, 0, 0}, {1, 0, 1}, {0, 0, 1}, {0, 0, 0}}, // D
-
 		{{1, 0, 1}, {1, 1, 1}, {1, 1, 0}, {1, 0, 0}}, // R .. x axis
-		//		{{0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {0, 0, 0}}, // R .. x axis
 		{{0, 1, 0}, {0, 0, 0}, {0, 0, 1}, {0, 1, 1}}, // L
-
 	}
 	var have = [6]int{2, 2, 1, 1, 0, 0}
 	var want = [6]float64{3, -3, 3, -3, 3, -3}
@@ -249,17 +230,14 @@ func prepTextures() {
 }
 
 func drawGlScene() {
-	var t = [8]int{0, 1, 2, 3, 0, 3, 1, 2}
 	var u float64 = 1.0 / 3.0
 	var subs = [9][4][]float64{
 		{{u * 0, u * 1}, {u * 0, u * 0}, {u * 1, u * 0}, {u * 1, u * 1}},
 		{{u * 1, u * 1}, {u * 1, u * 0}, {u * 2, u * 0}, {u * 2, u * 1}},
 		{{u * 2, u * 1}, {u * 2, u * 0}, {u * 3, u * 0}, {u * 3, u * 1}},
-
 		{{u * 0, u * 2}, {u * 0, u * 1}, {u * 1, u * 1}, {u * 1, u * 2}},
 		{{u * 1, u * 2}, {u * 1, u * 1}, {u * 2, u * 1}, {u * 2, u * 2}},
 		{{u * 2, u * 2}, {u * 2, u * 1}, {u * 3, u * 1}, {u * 3, u * 2}},
-
 		{{u * 0, u * 3}, {u * 0, u * 2}, {u * 1, u * 2}, {u * 1, u * 3}},
 		{{u * 1, u * 3}, {u * 1, u * 2}, {u * 2, u * 2}, {u * 2, u * 3}},
 		{{u * 2, u * 3}, {u * 2, u * 2}, {u * 3, u * 2}, {u * 3, u * 3}},
@@ -292,7 +270,7 @@ func drawGlScene() {
 	gl.Rotatef(perspectiveZ, 0.0, 0.0, 1.0)
 
 	if showTexture {
-		gl.Color4f(1, 1, 1, 1)
+		gl.Color4f(1.0, 1.0, 1.0, 1.0)
 	}
 
 	for i = 0; i < 27; i++ {
@@ -320,33 +298,30 @@ func drawGlScene() {
 					if cubeArray[i][j].v {
 						gl.Color4f(cubeColors[j][0], cubeColors[j][1], cubeColors[j][2], 1.0)
 					} else {
-						gl.Color4f(0.08, 0.08, 0.08, 1.0)
+						gl.Color4f(1.0, 1.0, 1.0, 1.0)
 					}
 				}
 				gl.Vertex3dv(&cubeArray[i][j].c[k][0])
 			}
 			gl.End()
-
 		}
 	}
-
-	gl.LineWidth(4.0)
-	gl.Begin(gl.LINES)
-	gl.Color4f(1.00, 0.08, 0.08, 1.0)
-	for i = 0; i < 27; i++ {
-		for j = 0; j < 8; j++ {
-			gl.Vertex3dv(&cubeArray[i][0].c[t[j]][0])
-		}
-		for j = 0; j < 8; j++ {
-			gl.Vertex3dv(&cubeArray[i][1].c[t[j]][0])
-		}
-		for j = 0; j < 4; j++ {
-			gl.Vertex3dv(&cubeArray[i][0].c[j][0])
-			gl.Vertex3dv(&cubeArray[i][1].c[j][0])
-		}
-	}
-	gl.End()
-	gl.Disable(gl.BLEND)
+	//    gl.BindTexture(gl.TEXTURE_2D, 0)
+	//    gl.Enable(gl.BLEND)
+	//    gl.Color4f(1.0, 0.0, 1.0, 0.4)
+	//	gl.LineWidth(10.0)
+	//	gl.Begin(gl.LINES)
+	//	for i = 0; i < 27; i++ {
+	//		for j = 0; j < 6; j++ {
+	//            for k = 0; k < 4; k++ {
+	//			    gl.Vertex3dv(&cubeArray[i][j].c[k][0])
+	//			    gl.Vertex3dv(&cubeArray[i][j].c[(k + 1) & 3][0])
+	//
+	//            }
+	//		}
+	//	}
+	//	gl.End()
+	//    gl.Disable(gl.BLEND)
 }
 
 func initGl() {
